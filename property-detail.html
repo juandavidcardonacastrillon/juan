@@ -99,26 +99,66 @@
 
         function App() {
             const [isMenuOpen, setIsMenuOpen] = React.useState(false);
-            const [properties, setProperties] = React.useState([]);
+            const [property, setProperty] = React.useState(null);
             const [currentImageIndex, setCurrentImageIndex] = React.useState(0);
-            const [isDragging, setIsDragging] = React.useState(false);
-            const [isGalleryOpen, setIsGalleryOpen] = React.useState(false);
-            const [previewImage, setPreviewImage] = React.useState(null);
+            const [fullscreenImage, setFullscreenImage] = React.useState(null);
+            const [fullscreenCurrentIndex, setFullscreenCurrentIndex] = React.useState(0);
             const [activeTab, setActiveTab] = React.useState('photos');
+            const [isDragging, setIsDragging] = React.useState(false);
             const [startX, setStartX] = React.useState(0);
             const [scrollLeft, setScrollLeft] = React.useState(0);
             const thumbnailsRef = React.useRef(null);
-            const isMobile = window.innerWidth < 768; // Detectar si es móvil
 
-            // Estado para la imagen en pantalla completa
-            const [fullscreenImage, setFullscreenImage] = React.useState(null);
+            React.useEffect(() => {
+                // Datos de la propiedad local
+                const propertyData = {
+                    id: 1,
+                    title: "Luxury Villa in Cali",
+                    description: "Stunning luxury villa with panoramic views of the Cali valley. This exceptional property offers the perfect blend of modern luxury and natural beauty.",
+                    price: "2500000000",
+                    location: "Cali, Valle del Cauca",
+                    area: "500",
+                    bedrooms: "5",
+                    bathrooms: "4",
+                    pool: "Yes",
+                    garage: "2 cars",
+                    status: "For Sale",
+                    images: [
+                        "./uploads/1739917029820-275378580.png",
+                        "./uploads/1739917029832-600103326.png",
+                        "./uploads/1739917029841-47510007.png",
+                        "./uploads/1739917029849-32840683.png",
+                        "./uploads/1739917029856-605471089.png",
+                        "./uploads/1739917029862-637275718.png"
+                    ],
+                    features: {
+                        interior: [
+                            "Luxury Kitchen",
+                            "Smart Home System",
+                            "Home Theater",
+                            "Wine Cellar",
+                            "Gym"
+                        ],
+                        exterior: [
+                            "Infinity Pool",
+                            "Outdoor Kitchen",
+                            "Garden",
+                            "Terrace",
+                            "Parking for 2 cars"
+                        ]
+                    },
+                    latitude: 3.4516,
+                    longitude: -76.5320
+                };
 
-            // Estado para el índice de la imagen actual
-            const [fullscreenCurrentIndex, setFullscreenCurrentIndex] = React.useState(0);
+                setProperty(propertyData);
+                setCurrentImageIndex(0);
+            }, []);
 
             // Función para navegar entre imágenes
             const navigateImage = (direction) => {
-                const currentIndex = property.images.findIndex(img => `http://192.168.20.23:3000${img}` === fullscreenImage);
+                const currentIndex = property.images.findIndex(img => img === fullscreenImage);
+                
                 let newIndex;
                 
                 if (direction === 'next') {
@@ -127,7 +167,7 @@
                     newIndex = currentIndex === 0 ? property.images.length - 1 : currentIndex - 1;
                 }
                 
-                setFullscreenImage(`http://192.168.20.23:3000${property.images[newIndex]}`);
+                setFullscreenImage(property.images[newIndex]);
                 setFullscreenCurrentIndex(newIndex);
             };
 
@@ -227,8 +267,7 @@
                 thumbnailsRef.current.scrollLeft = scrollLeft - walk;
             };
 
-            const [property, setProperty] = React.useState(null);
-            const [loading, setLoading] = React.useState(true);
+            const [isGalleryOpen, setIsGalleryOpen] = React.useState(false);
             const [showAllPhotos, setShowAllPhotos] = React.useState(false);
             const [additionalImages, setAdditionalImages] = React.useState([]);
 
@@ -373,6 +412,8 @@
                 preview.onclick = null;
             };
 
+            const [loading, setLoading] = React.useState(true);
+
             if (loading) {
                 return (
                     <div className="flex items-center justify-center h-screen">
@@ -395,7 +436,7 @@
                     <div className="absolute w-full z-50 px-4 md:px-20 py-6">
                         <div className="flex justify-between items-center">
                             <div className="w-16 sm:w-24">
-                                <a href="pagina principal.html">
+                                <a href="index.html">
                                     <img src="./assets/images/logo.png" alt="JC International logo" className="w-full"/>
                                 </a>
                             </div>
@@ -427,49 +468,49 @@
                     >
                         <div className="flex flex-col items-center justify-center h-full space-y-8">
                             <a 
-                                href="pagina principal.html" 
+                                href="index.html" 
                                 className="text-white text-2xl hover:text-gray-300 transition-colors duration-300"
                                 onClick={() => setIsMenuOpen(false)}
                             >
                                 HOME
                             </a>
                             <a 
-                                href="nuestras propiedades.html" 
+                                href="nuestras-propiedades.html" 
                                 className="text-white text-2xl hover:text-gray-300 transition-colors duration-300"
                                 onClick={() => setIsMenuOpen(false)}
                             >
                                 OUR PROPERTIES
                             </a>
                             <a 
-                                href="pagina principal.html#smart-search" 
+                                href="index.html#smart-search" 
                                 className="text-white text-2xl hover:text-gray-300 transition-colors duration-300"
                                 onClick={() => setIsMenuOpen(false)}
                             >
                                 SMART SEARCH
                             </a>
                             <a 
-                                href="pagina principal.html#regions" 
+                                href="index.html#regions" 
                                 className="text-white text-2xl hover:text-gray-300 transition-colors duration-300"
                                 onClick={() => setIsMenuOpen(false)}
                             >
                                 SEARCH BY REGIONS
                             </a>
                             <a 
-                                href="pagina principal.html#about" 
+                                href="index.html#about" 
                                 className="text-white text-2xl hover:text-gray-300 transition-colors duration-300"
                                 onClick={() => setIsMenuOpen(false)}
                             >
                                 ABOUT
                             </a>
                             <a 
-                                href="pagina principal.html#blog" 
+                                href="index.html#blog" 
                                 className="text-white text-2xl hover:text-gray-300 transition-colors duration-300"
                                 onClick={() => setIsMenuOpen(false)}
                             >
                                 BLOG
                             </a>
                             <a 
-                                href="pagina principal.html#work-with-us" 
+                                href="index.html#work-with-us" 
                                 className="text-white text-2xl hover:text-gray-300 transition-colors duration-300"
                                 onClick={() => setIsMenuOpen(false)}
                             >
@@ -558,7 +599,7 @@
                         {/* Logo */}
                         <div className="absolute w-full z-50 px-4 md:px-20 py-6">
                             <div className="w-16 sm:w-24">
-                                <a href="pagina principal.html">
+                                <a href="index.html">
                                     <img src="./assets/images/logo.png" alt="JC International logo" className="w-full"/>
                                 </a>
                             </div>
@@ -567,7 +608,7 @@
                         {/* Main Image Section */}
                         <div className="relative w-full h-[70vh] md:h-[80vh] mb-2 group overflow-hidden rounded-lg">
                             <img 
-                                src={`http://192.168.20.23:3000${property.images[currentImageIndex]}`} 
+                                src={property.images[currentImageIndex]} 
                                 alt={property.title} 
                                 className="w-full h-full object-cover transition-all duration-700 group-hover:scale-105 group-hover:brightness-110"
                             />
@@ -660,7 +701,7 @@
                                         onClick={() => !isDragging && setCurrentImageIndex(index)}
                                     >
                                         <img 
-                                            src={`http://192.168.20.23:3000${image}`} 
+                                            src={image} 
                                             alt={`Property view ${index + 1}`} 
                                             className={`w-full h-full object-cover rounded-lg transition-all duration-500 md:duration-700 
                                                 group-hover:brightness-110 group-hover:scale-[1.03] 
@@ -716,7 +757,7 @@
                                     <div className="mb-12">
                                         <h2 className="text-2xl text-white mb-4">Description</h2>
                                         <p className="text-gray-400 leading-relaxed">
-                                            {property.details}
+                                            {property.description}
                                         </p>
                                     </div>
                                 </div>
@@ -725,21 +766,21 @@
                                         <div className="flex items-center">
                                             <i className="fas fa-bed text-2xl w-8 text-gray-400"></i>
                                             <div className="ml-4">
-                                                <div className="text-2xl sm:text-3xl font-semibold text-white">{property.beds || '3'}</div>
+                                                <div className="text-2xl sm:text-3xl font-semibold text-white">{property.bedrooms || '3'}</div>
                                                 <div className="text-xs sm:text-sm font-medium text-gray-400">BEDS</div>
                                             </div>
                                         </div>
                                         <div className="flex items-center">
                                             <i className="fas fa-bath text-2xl w-8 text-gray-400"></i>
                                             <div className="ml-4">
-                                                <div className="text-2xl sm:text-3xl font-semibold text-white">{property.baths || '4'}</div>
+                                                <div className="text-2xl sm:text-3xl font-semibold text-white">{property.bathrooms || '4'}</div>
                                                 <div className="text-xs sm:text-sm font-medium text-gray-400">BATHS</div>
                                             </div>
                                         </div>
                                         <div className="flex items-center">
                                             <i className="fas fa-vector-square text-2xl w-8 text-gray-400"></i>
                                             <div className="ml-4">
-                                                <div className="text-2xl sm:text-3xl font-semibold text-white">{property.living_area} m²</div>
+                                                <div className="text-2xl sm:text-3xl font-semibold text-white">{property.area} m²</div>
                                                 <div className="text-xs sm:text-sm font-medium text-gray-400">LIVING AREA</div>
                                             </div>
                                         </div>
@@ -877,15 +918,15 @@
                                             <div className="space-y-4">
                                                 <div className="flex justify-between">
                                                     <span className="text-gray-400">TOTAL BEDROOMS</span>
-                                                    <span className="text-white">{property.beds || '3'}</span>
+                                                    <span className="text-white">{property.bedrooms || '3'}</span>
                                                 </div>
                                                 <div className="flex justify-between">
                                                     <span className="text-gray-400">TOTAL BATHROOMS</span>
-                                                    <span className="text-white">{property.baths || '4'}</span>
+                                                    <span className="text-white">{property.bathrooms || '4'}</span>
                                                 </div>
                                                 <div className="flex justify-between">
                                                     <span className="text-gray-400">LIVING AREA</span>
-                                                    <span className="text-white">{property.living_area} m²</span>
+                                                    <span className="text-white">{property.area} m²</span>
                                                 </div>
                                                 <div className="flex justify-between">
                                                     <span className="text-gray-400">LOT SIZE</span>
@@ -950,7 +991,7 @@
                                                     </div>
                                                     <div className="flex justify-between">
                                                         <span className="text-gray-400">LIVING AREA</span>
-                                                        <span className="text-white">{property.living_area} m²</span>
+                                                        <span className="text-white">{property.area} m²</span>
                                                     </div>
                                                     <div className="flex justify-between">
                                                         <span className="text-gray-400">LOT SIZE</span>
@@ -1032,10 +1073,10 @@
                                                                 {/* Imagen grande */}
                                                                 <div 
                                                                     className="w-full h-[300px] mb-6 overflow-hidden rounded-lg cursor-pointer group"
-                                                                    onClick={() => setFullscreenImage(`http://192.168.20.23:3000${image}`)}
+                                                                    onClick={() => setFullscreenImage(image)}
                                                                 >
                                                                     <img 
-                                                                        src={`http://192.168.20.23:3000${image}`}
+                                                                        src={image}
                                                                         alt={`Imagen ${index + 1}`}
                                                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                                                     />
@@ -1047,10 +1088,10 @@
                                                                         {property.images[index + 1] && (
                                                                             <div 
                                                                                 className="h-[180px] overflow-hidden rounded-lg cursor-pointer group"
-                                                                                onClick={() => setFullscreenImage(`http://192.168.20.23:3000${property.images[index + 1]}`)}
+                                                                                onClick={() => setFullscreenImage(property.images[index + 1])}
                                                                             >
                                                                                 <img 
-                                                                                    src={`http://192.168.20.23:3000${property.images[index + 1]}`}
+                                                                                    src={property.images[index + 1]}
                                                                                     alt={`Imagen ${index + 2}`}
                                                                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                                                                 />
@@ -1059,10 +1100,10 @@
                                                                         {property.images[index + 2] && (
                                                                             <div 
                                                                                 className="h-[180px] overflow-hidden rounded-lg cursor-pointer group"
-                                                                                onClick={() => setFullscreenImage(`http://192.168.20.23:3000${property.images[index + 2]}`)}
+                                                                                onClick={() => setFullscreenImage(property.images[index + 2])}
                                                                             >
                                                                                 <img 
-                                                                                    src={`http://192.168.20.23:3000${property.images[index + 2]}`}
+                                                                                    src={property.images[index + 2]}
                                                                                     alt={`Imagen ${index + 3}`}
                                                                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                                                                 />
