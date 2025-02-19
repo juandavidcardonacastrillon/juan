@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - JC International</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #0a0a0a;
+            color: #e5e5e5;
+        }
+    </style>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB2FXLYxbxw0jEijdyyd9QBx8M2w2wjGK4"></script>
+    <script src="https://unpkg.com/react@18.0.0/umd/react.development.js"></script>
+</head>
+<body>
+    <div class="min-h-screen p-6 bg-[#0a0a0a]">
+        <div class="container max-w-screen-lg mx-auto">
+            <!-- Formulario de Agregar/Editar -->
+            <div class="bg-[#1a1a1a] rounded shadow-lg p-4 px-4 md:p-8 mb-6">
+                <div class="grid gap-4 gap-y-2 text-sm grid-cols-1">
+                    <div class="text-gray-300">
+                        <h2 class="font-semibold text-xl text-white mb-6" id="formTitle">Agregar Nueva Propiedad</h2>
+                        <form id="propertyForm" class="grid gap-4">
+                            <input type="hidden" id="propertyId">
+                            <div>
+                                <label for="title">Título 
+                                    <i class="fas fa-question-circle text-gray-400 hover:text-gray-300 ml-1 cursor-help text-[10px]" 
+                                       title="Ejemplos: 
+• Casa de Lujo en la Costa
+• Apartamento Moderno en el Centro
+• Mansión con Piscina y Jardines
+• Casa de Campo con Viñedos
+• Departamento con Vista Panorámica
+• Casa de Diseño con Arquitectura Moderna
+• Propiedad con Acceso Directo a la Playa
+• Residencia con Spa Privado y Gimnasio
+• Casa con Jardines y Áreas Verdes
+• Propiedad con Vista al Mar"></i>
+                                </label>
+                                <input type="text" name="title" id="title" class="h-10 border mt-1 rounded px-4 w-full bg-gray-800 text-white" required>
+                            </div>
+
+                            <div>
+                                <label for="location">Ubicación</label>
+                                <select id="location" name="location" class="h-10 border mt-1 rounded px-4 w-full bg-gray-800 text-white" required>
+                                    <option value="">Seleccionar ubicación</option>
+                                    <option value="cali">Cali</option>
+                                    <option value="eje-cafetero">Eje Cafetero</option>
+                                    <option value="cerritos-pereira">Cerritos Pereira</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="address">Dirección</label>
+                                <input type="text" name="address" id="address" class="h-10 border mt-1 rounded px-4 w-full bg-gray-800 text-white" required>
+                            </div>
+
+                            <div>
+                                <label for="details">Detalles (máximo 200 palabras) 
+                                    <i class="fas fa-question-circle text-gray-400 hover:text-gray-300 ml-1 cursor-help text-[10px]" 
+                                       title="Ubicada en la exclusiva zona de Pance, esta casa de lujo ofrece vistas panorámicas a las montañas y un entorno natural privilegiado. Con acabados de alta gama, amplios ventanales y una piscina privada, es perfecta para quienes buscan privacidad y comodidad. Sus 5 habitaciones, cada una con baño en suite, y áreas sociales abiertas brindan un espacio ideal para el entretenimiento. Además, cuenta con sistemas de seguridad, aire acondicionado en todas las áreas y un estacionamiento techado para 4 vehículos. A solo minutos de los mejores restaurantes, colegios y centros comerciales de la ciudad, esta propiedad combina elegancia, confort y ubicación privilegiada."></i>
+                                </label>
+                                <textarea name="details" id="details" class="border mt-1 rounded px-4 py-2 w-full bg-gray-800 text-white h-32" 
+                                    placeholder="Descripción detallada de la propiedad" required
+                                    onkeyup="validateWordCount(this)"></textarea>
+                                <p id="wordCount" class="text-sm text-gray-400 mt-1">0 palabras</p>
+                            </div>
+
+                            <div>
+                                <label for="price">Precio</label>
+                                <div class="flex gap-2">
+                                    <input type="text" name="price" id="price" class="h-10 border mt-1 rounded px-4 w-full bg-gray-800 text-white" placeholder="Ej: 180.000.000" oninput="formatPriceInput(this)" required>
+                                    <select name="currency" id="currency" class="h-10 border mt-1 rounded px-4 bg-gray-800 text-white">
+                                        <option value="COP">COP</option>
+                                        <option value="USD">USD</option>
+                                        <option value="EUR">EUR</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="beds">Habitaciones (Beds)</label>
+                                    <input type="number" name="beds" id="beds" class="h-10 border mt-1 rounded px-4 w-full bg-gray-800 text-white" required>
+                                </div>
+                                <div>
+                                    <label for="baths">Baños (Baths)</label>
+                                    <input type="number" name="baths" id="baths" class="h-10 border mt-1 rounded px-4 w-full bg-gray-800 text-white" required>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="living_area">Área Habitable (m²)</label>
+                                    <input type="text" name="living_area" id="living_area" class="h-10 border mt-1 rounded px-4 w-full bg-gray-800 text-white" placeholder="Ej: 250" required>
+                                </div>
+                                <div>
+                                    <label for="lot_size">Tamaño del Lote (m²)</label>
+                                    <input type="text" name="lot_size" id="lot_size" class="h-10 border mt-1 rounded px-4 w-full bg-gray-800 text-white" placeholder="Ej: 1500" required>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4 mt-4">
+                                <div>
+                                    <label for="pool">Piscina</label>
+                                    <select name="pool" id="pool" class="h-10 border mt-1 rounded px-4 w-full bg-gray-800 text-white">
+                                        <option value="No">No</option>
+                                        <option value="Yes">Sí</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="jacuzzi">Jacuzzi</label>
+                                    <select name="jacuzzi" id="jacuzzi" class="h-10 border mt-1 rounded px-4 w-full bg-gray-800 text-white">
+                                        <option value="No">No</option>
+                                        <option value="Yes">Sí</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="turco">Turco</label>
+                                    <select name="turco" id="turco" class="h-10 border mt-1 rounded px-4 w-full bg-gray-800 text-white">
+                                        <option value="No">No</option>
+                                        <option value="Yes">Sí</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="sauna">Sauna</label>
+                                    <select name="sauna" id="sauna" class="h-10 border mt-1 rounded px-4 w-full bg-gray-800 text-white">
+                                        <option value="No">No</option>
+                                        <option value="Yes">Sí</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4 mt-4">
+                                <div>
+                                    <label for="air_conditioning">Aire Acondicionado</label>
+                                    <select name="air_conditioning" id="air_conditioning" class="h-10 border mt-1 rounded px-4 w-full bg-gray-800 text-white">
+                                        <option value="No">No</option>
+                                        <option value="Yes">Sí</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="year_built">Año de Construcción</label>
+                                    <input type="number" name="year_built" id="year_built" class="h-10 border mt-1 rounded px-4 w-full bg-gray-800 text-white" placeholder="Ej: 2020">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4 mt-4">
+                                <div>
+                                    <label for="property_type">Tipo de Propiedad</label>
+                                    <select name="property_type" id="property_type" class="h-10 border mt-1 rounded px-4 w-full bg-gray-800 text-white">
+                                        <option value="">Seleccionar tipo</option>
+                                        <optgroup label="Propiedades Comunes">
+                                            <option value="House">Casa</option>
+                                            <option value="Apartment">Apartamento</option>
+                                            <option value="Farm">Finca</option>
+                                            <option value="Penthouse">Penthouse</option>
+                                            <option value="Land">Lote</option>
+                                            <option value="Office">Oficina</option>
+                                            <option value="Commercial">Local Comercial</option>
+                                            <option value="Warehouse">Bodega</option>
+                                            <option value="Building">Edificio</option>
+                                            <option value="Studio">Estudio</option>
+                                        </optgroup>
+                                        <optgroup label="Propiedades de Lujo">
+                                            <option value="Luxury Villa">Villa de Lujo</option>
+                                            <option value="Mansion">Mansión</option>
+                                            <option value="Country Estate">Hacienda Campestre</option>
+                                            <option value="Beachfront Property">Propiedad Frente al Mar</option>
+                                            <option value="Golf Villa">Villa en Campo de Golf</option>
+                                            <option value="Mountain Retreat">Retiro en la Montaña</option>
+                                            <option value="Luxury Condo">Condominio de Lujo</option>
+                                            <option value="Historic Estate">Propiedad Histórica</option>
+                                            <option value="Wine Estate">Viñedo</option>
+                                            <option value="Private Island">Isla Privada</option>
+                                            <option value="Eco Luxury Home">Casa Eco-Luxe</option>
+                                            <option value="Ranch">Rancho</option>
+                                            <option value="Resort Villa">Villa Resort</option>
+                                            <option value="Urban Mansion">Mansión Urbana</option>
+                                            <option value="Lakefront Property">Propiedad Frente al Lago</option>
+                                        </optgroup>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="architecture_style">Estilo Arquitectónico <i class="fas fa-question-circle text-gray-400 hover:text-gray-300 ml-1 cursor-help text-xs" title="• Contemporáneo: Abarca las tendencias actuales, fusionando innovaciones tecnológicas y sostenibilidad.
+• Moderno: Se caracteriza por el funcionalismo, líneas limpias y el 'menos es más'.
+• Minimalista: Enfatiza la simplicidad, eliminando lo superfluo para lograr espacios despejados.
+• Industrial: Inspirado en naves y lofts, con el uso evidente de acero, hormigón y elementos expuestos.
+• Escandinavo: Destaca por su sencillez, funcionalidad y uso de materiales naturales y luminosidad.
+• Mediterráneo: Evoca climas cálidos y relajados, con patios interiores, arcos y materiales tradicionales.
+• Colonial: Reminiscente de la arquitectura de la época colonial, combinando elementos europeos y locales.
+• Tradicional: Mantiene los rasgos y técnicas constructivas propias de una región o cultura.
+• Neoclásico: Inspira orden y simetría, retomando motivos y proporciones de la antigüedad clásica.
+• Victoriano: Caracterizado por detalles ornamentales y una rica decoración, típico del siglo XIX.
+• Art Decó: Se distingue por formas geométricas, simetría y detalles lujosos y decorativos.
+• Brutalista: Enfatiza el uso del hormigón y estructuras monumentales, con una estética austera.
+• Postmoderno: Combina elementos modernos con guiños históricos y toques decorativos que rompen la rigidez.
+• Rústico: Prioriza materiales naturales y un acabado que resalta la tradición y el entorno natural.
+• Craftsman: Enfatiza la calidad de la mano de obra, la integración de la naturaleza y detalles en madera."></i></label>
+                                    <select name="architecture_style" id="architecture_style" class="h-10 border mt-1 rounded px-4 w-full bg-gray-800 text-white">
+                                        <option value="">Seleccionar Estilo Arquitectónico</option>
+                                        <option value="Contemporary">Contemporáneo</option>
+                                        <option value="Modern">Moderno</option>
+                                        <option value="Minimalist">Minimalista</option>
+                                        <option value="Industrial">Industrial</option>
+                                        <option value="Scandinavian">Escandinavo</option>
+                                        <option value="Mediterranean">Mediterráneo</option>
+                                        <option value="Colonial">Colonial</option>
+                                        <option value="Traditional">Tradicional</option>
+                                        <option value="Neoclassical">Neoclásico</option>
+                                        <option value="Victorian">Victoriano</option>
+                                        <option value="Art Deco">Art Decó</option>
+                                        <option value="Brutalist">Brutalista</option>
+                                        <option value="Postmodern">Postmoderno</option>
+                                        <option value="Rustic">Rústico</option>
+                                        <option value="Craftsman">Craftsman (Estilo Artesanal)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4 mt-4">
+                                <div>
+                                    <label for="status">Estado</label>
+                                    <select name="status" id="status" class="h-10 border mt-1 rounded px-4 w-full bg-gray-800 text-white">
+                                        <option value="FOR SALE">En Venta</option>
+                                        <option value="SOLD">Vendido</option>
+                                        <option value="PENDING">Pendiente</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="parking">Estacionamiento</label>
+                                    <select name="parking" id="parking" class="h-10 border mt-1 rounded px-4 w-full bg-gray-800 text-white">
+                                        <option value="No">No</option>
+                                        <option value="Yes">Sí</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4 mt-4">
+                                <div>
+                                    <label for="heat_type">Tipo de Calefacción</label>
+                                    <select name="heat_type" id="heat_type" class="h-10 border mt-1 rounded px-4 w-full bg-gray-800 text-white">
+                                        <option value="No">No</option>
+                                        <option value="Yes">Sí</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="zoning">Zonificación</label>
+                                    <input type="text" name="zoning" id="zoning" class="h-10 border mt-1 rounded px-4 w-full bg-gray-800 text-white" placeholder="Ej: 3-E-1">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4 mt-4">
+                                <div>
+                                    <label for="mls_id">ID</label>
+                                    <input type="text" name="mls_id" id="mls_id" class="h-10 border mt-1 rounded px-4 w-full bg-gray-800 text-white" placeholder="Ej: 25494313">
+                                </div>
+                                <div>
+                                    <label for="view_description">Descripción de la Vista</label>
+                                    <select name="view_description" id="view_description" class="h-10 border mt-1 rounded px-4 w-full bg-gray-800 text-white" multiple>
+                                        <option value="Coastline">Costa</option>
+                                        <option value="Ocean">Océano</option>
+                                        <option value="Panoramic">Panorámica</option>
+                                        <option value="Water">Agua</option>
+                                        <option value="Creek/Stream">Arroyo</option>
+                                        <option value="Trees/Woods">Bosque</option>
+                                        <option value="Mountain">Montaña</option>
+                                        <option value="Valley">Valle</option>
+                                    </select>
+                                    <p class="text-sm text-gray-400 mt-1">Mantén presionado Ctrl (Cmd en Mac) para seleccionar múltiples opciones</p>
+                                </div>
+                            </div>
+
+                            <div class="mb-6">
+                                <label class="block text-gray-300 text-sm font-bold mb-2">
+                                    Ubicación en el Mapa
+                                </label>
+                                <div id="map" style="height: 400px; width: 100%" class="mb-4"></div>
+                                <input
+                                    type="hidden"
+                                    name="latitude"
+                                    id="latitude"
+                                />
+                                <input
+                                    type="hidden"
+                                    name="longitude"
+                                    id="longitude"
+                                />
+                            </div>
+
+                            <div>
+                                <label for="images">Imágenes (máximo 30)</label>
+                                <input type="file" name="images" id="images" accept="image/*" multiple 
+                                    class="mt-1 block w-full text-sm text-gray-300
+                                    file:mr-4 file:py-2 file:px-4
+                                    file:rounded-full file:border-0
+                                    file:text-sm file:font-semibold
+                                    file:bg-violet-50 file:text-violet-700
+                                    hover:file:bg-violet-100" required>
+                                <p id="imageRequired" class="text-sm text-gray-400 mt-1">Al menos una imagen es requerida</p>
+                                <div id="imagePreview" class="mt-4 grid grid-cols-3 gap-4"></div>
+                            </div>
+
+                            <div class="mt-4 flex gap-4">
+                                <button type="submit" id="submitBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+                                    Agregar Propiedad
+                                </button>
+                                <button type="button" id="cancelBtn" class="hidden bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">
+                                    Cancelar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de Propiedades -->
+            <div class="bg-[#1a1a1a] rounded shadow-lg p-4 px-4 md:p-8 mb-6">
+                <h2 class="font-semibold text-xl text-white mb-6">Propiedades Existentes</h2>
+                <div id="propertiesList" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Las propiedades se cargarán aquí dinámicamente -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isEditing = false;
+        const API_URL = 'http://192.168.20.23:3000';
+
+        // Función para cargar las propiedades
+        async function loadProperties() {
+            try {
+                const response = await fetch(`${API_URL}/api/properties`);
+                const properties = await response.json();
+                const propertiesList = document.getElementById('propertiesList');
+                propertiesList.innerHTML = '';
+
+                properties.forEach(property => {
+                    const propertyCard = document.createElement('div');
+                    propertyCard.className = 'bg-[#2a2a2a] p-4 rounded-lg';
+                    propertyCard.innerHTML = `
+                        <img src="${API_URL}${property.image_url}" alt="${property.title}" class="w-full h-48 object-cover rounded mb-4">
+                        <h3 class="text-lg font-semibold mb-2">${property.title}</h3>
+                        <p class="text-gray-400 text-sm mb-2">${property.address}</p>
+                        <p class="text-gray-400 text-sm mb-2">${property.details}</p>
+                        <p class="text-lg mb-4">${property.price}</p>
+                        <p class="text-gray-400 text-sm mb-2">Habitaciones: ${property.beds}</p>
+                        <p class="text-gray-400 text-sm mb-2">Baños: ${property.baths}</p>
+                        <p class="text-gray-400 text-sm mb-2">Área Habitable: ${property.living_area} m²</p>
+                        <p class="text-gray-400 text-sm mb-2">Tamaño del Lote: ${property.lot_size} m²</p>
+                        <div class="flex gap-2">
+                            <button onclick="editProperty(${property.id})" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded">
+                                <i class="fas fa-edit"></i> Editar
+                            </button>
+                            <button onclick="deleteProperty(${property.id})" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">
+                                <i class="fas fa-trash"></i> Eliminar
+                            </button>
+                        </div>
+                    `;
+                    propertiesList.appendChild(propertyCard);
+                });
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // Función para editar una propiedad
+        async function editProperty(id) {
+            try {
+                const response = await fetch(`${API_URL}/api/properties`);
+                const properties = await response.json();
+                const property = properties.find(p => p.id === id);
+
+                if (property) {
+                    document.getElementById('propertyId').value = property.id;
+                    document.getElementById('title').value = property.title;
+                    document.getElementById('location').value = property.location;
+                    document.getElementById('address').value = property.address;
+                    document.getElementById('details').value = property.details;
+                    document.getElementById('price').value = new Intl.NumberFormat('es-CO').format(property.price);
+                    document.getElementById('currency').value = property.currency;
+                    document.getElementById('beds').value = property.beds;
+                    document.getElementById('baths').value = property.baths;
+                    document.getElementById('living_area').value = property.living_area;
+                    document.getElementById('lot_size').value = property.lot_size;
+                    document.getElementById('pool').value = property.pool;
+                    document.getElementById('jacuzzi').value = property.jacuzzi;
+                    document.getElementById('turco').value = property.turco;
+                    document.getElementById('sauna').value = property.sauna;
+                    document.getElementById('air_conditioning').value = property.air_conditioning;
+                    document.getElementById('year_built').value = property.year_built;
+                    document.getElementById('property_type').value = property.property_type;
+                    document.getElementById('architecture_style').value = property.architecture_style;
+                    document.getElementById('status').value = property.status;
+                    document.getElementById('parking').value = property.parking;
+                    document.getElementById('heat_type').value = property.heat_type;
+                    document.getElementById('zoning').value = property.zoning;
+                    document.getElementById('mls_id').value = property.mls_id;
+                    document.getElementById('view_description').value = property.view_description;
+                    document.getElementById('images').required = false;
+                    document.getElementById('imageRequired').textContent = 'La imagen es opcional al editar';
+                    document.getElementById('formTitle').textContent = 'Editar Propiedad';
+                    document.getElementById('submitBtn').textContent = 'Actualizar Propiedad';
+                    document.getElementById('cancelBtn').classList.remove('hidden');
+                    isEditing = true;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // Función para eliminar una propiedad
+        async function deleteProperty(id) {
+            if (confirm('¿Estás seguro de que deseas eliminar esta propiedad?')) {
+                try {
+                    const response = await fetch(`${API_URL}/api/properties/${id}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (response.ok) {
+                        alert('Propiedad eliminada exitosamente');
+                        loadProperties();
+                    } else {
+                        const result = await response.json();
+                        alert('Error al eliminar la propiedad: ' + result.error);
+                    }
+                } catch (error) {
+                    alert('Error al conectar con el servidor: ' + error);
+                }
+            }
+        }
+
+        // Función para resetear el formulario
+        function resetForm() {
+            document.getElementById('propertyForm').reset();
+            document.getElementById('propertyId').value = '';
+            document.getElementById('images').required = true;
+            document.getElementById('imageRequired').textContent = 'Al menos una imagen es requerida';
+            document.getElementById('formTitle').textContent = 'Agregar Nueva Propiedad';
+            document.getElementById('submitBtn').textContent = 'Agregar Propiedad';
+            document.getElementById('cancelBtn').classList.add('hidden');
+            isEditing = false;
+        }
+
+        // Event Listeners
+        document.getElementById('propertyForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            const propertyId = document.getElementById('propertyId').value;
+            
+            formData.append('title', document.getElementById('title').value);
+            formData.append('price', document.getElementById('price').value.replace(/\D/g, ''));
+            formData.append('currency', document.getElementById('currency').value);
+            formData.append('address', document.getElementById('address').value);
+            formData.append('details', document.getElementById('details').value);
+            formData.append('location', document.getElementById('location').value);
+
+            // Asegurar que las coordenadas se envíen
+            const lat = document.getElementById('latitude').value;
+            const lng = document.getElementById('longitude').value;
+            console.log('Enviando coordenadas:', { lat, lng });
+            formData.append('latitude', lat);
+            formData.append('longitude', lng);
+
+            formData.append('beds', document.getElementById('beds').value);
+            formData.append('baths', document.getElementById('baths').value);
+            formData.append('living_area', document.getElementById('living_area').value);
+            formData.append('lot_size', document.getElementById('lot_size').value);
+            formData.append('pool', document.getElementById('pool').value);
+            formData.append('jacuzzi', document.getElementById('jacuzzi').value);
+            formData.append('turco', document.getElementById('turco').value);
+            formData.append('sauna', document.getElementById('sauna').value);
+            formData.append('air_conditioning', document.getElementById('air_conditioning').value);
+            formData.append('year_built', document.getElementById('year_built').value);
+            formData.append('property_type', document.getElementById('property_type').value);
+            formData.append('architecture_style', document.getElementById('architecture_style').value);
+            formData.append('status', document.getElementById('status').value);
+            formData.append('parking', document.getElementById('parking').value);
+            formData.append('heat_type', document.getElementById('heat_type').value);
+            formData.append('zoning', document.getElementById('zoning').value);
+            formData.append('mls_id', document.getElementById('mls_id').value);
+            formData.append('view_description', document.getElementById('view_description').value);
+            
+            const imageFiles = document.getElementById('images').files;
+            Array.from(imageFiles).forEach(file => {
+                formData.append('images', file);
+            });
+
+            try {
+                const url = isEditing 
+                    ? `${API_URL}/api/properties/${propertyId}`
+                    : `${API_URL}/api/properties`;
+                
+                const method = isEditing ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert(isEditing ? 'Propiedad actualizada exitosamente' : 'Propiedad agregada exitosamente');
+                    resetForm();
+                    loadProperties();
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                alert('Error al conectar con el servidor: ' + error);
+            }
+        });
+
+        document.getElementById('cancelBtn').addEventListener('click', resetForm);
+
+        // Agregar preview de imágenes
+        document.getElementById('images').addEventListener('change', function(e) {
+            const previewContainer = document.getElementById('imagePreview');
+            previewContainer.innerHTML = ''; // Limpiar previews anteriores
+            
+            if (this.files.length > 30) {
+                alert('Por favor selecciona máximo 30 imágenes');
+                this.value = '';
+                return;
+            }
+
+            Array.from(this.files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const div = document.createElement('div');
+                    div.className = 'relative aspect-square';
+                    div.innerHTML = `
+                        <img src="${e.target.result}" class="w-full h-full object-cover rounded">
+                    `;
+                    previewContainer.appendChild(div);
+                }
+                reader.readAsDataURL(file);
+            });
+        });
+
+        // Inicializar el mapa
+        function initMap() {
+            const cali = { lat: 3.4516, lng: -76.5320 }; // Coordenadas de Cali
+            const map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 13,
+                center: cali,
+            });
+
+            let marker = new google.maps.Marker({
+                position: cali,
+                map: map,
+                draggable: true
+            });
+
+            // Actualizar coordenadas cuando se mueve el marcador
+            google.maps.event.addListener(marker, 'dragend', function() {
+                const position = marker.getPosition();
+                document.getElementById('latitude').value = position.lat();
+                document.getElementById('longitude').value = position.lng();
+            });
+
+            // Permitir hacer clic en el mapa para mover el marcador
+            google.maps.event.addListener(map, 'click', function(event) {
+                marker.setPosition(event.latLng);
+                document.getElementById('latitude').value = event.latLng.lat();
+                document.getElementById('longitude').value = event.latLng.lng();
+            });
+        }
+
+        // Inicializar el mapa cuando la página cargue
+        window.onload = initMap;
+
+        // Cargar propiedades al iniciar
+        loadProperties();
+
+        function formatPriceInput(input) {
+            // Eliminar todo excepto números
+            let value = input.value.replace(/\D/g, '');
+            
+            // Formatear manualmente con puntos y comillas
+            const parts = [];
+            while (value.length > 0) {
+                parts.unshift(value.slice(-3));
+                value = value.slice(0, -3);
+            }
+            
+            // Unir con puntos
+            let formattedNumber = parts.join('.');
+            
+            // Si el número tiene 7 o más dígitos (es 1 millón o más)
+            if (input.value.replace(/\D/g, '').length >= 7) {
+                const dots = formattedNumber.split('.');
+                // Si hay más de 3 partes (es decir, miles de millones o más)
+                if (dots.length > 3) {
+                    // Mantener el punto para miles de millones, usar comilla para millones
+                    formattedNumber = dots.slice(0, -2).join('.') + "'" + dots.slice(-2).join('.');
+                } else {
+                    // Solo millones, reemplazar el primer punto con comilla
+                    formattedNumber = formattedNumber.replace('.', "'");
+                }
+            }
+            
+            input.value = formattedNumber;
+        }
+
+        // Cuando se envía el formulario, eliminar los puntos antes de enviar
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const priceInput = document.getElementById('price');
+            priceInput.value = priceInput.value.replace(/\D/g, '');
+        });
+
+        function validateWordCount(textarea) {
+            const text = textarea.value;
+            const wordCount = text.trim().split(/\s+/).length;
+            document.getElementById('wordCount').textContent = `${wordCount} palabras`;
+            
+            if (wordCount > 200) {
+                const words = text.trim().split(/\s+/);
+                textarea.value = words.slice(0, 200).join(' ');
+                document.getElementById('wordCount').textContent = '200 palabras (límite alcanzado)';
+                document.getElementById('wordCount').className = 'text-sm text-red-400 mt-1';
+            } else {
+                document.getElementById('wordCount').className = 'text-sm text-gray-400 mt-1';
+            }
+        }
+    </script>
+</body>
+</html>

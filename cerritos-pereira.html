@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TF International - Cerritos Pereira</title>
+    <script src="https://unpkg.com/react@18.0.0/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18.0.0/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #0a0a0a;
+            color: #e5e5e5;
+        }
+        .text-shadow {
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        @media (max-width: 768px) {
+            .desktop-only {
+                display: none !important;
+            }
+        }
+        /* Estilos unificados para scrollbars - Solo PC */
+        @media (min-width: 768px) {
+            /* Scrollbar vertical */
+            body::-webkit-scrollbar,
+            .thumbnails-container::-webkit-scrollbar {
+                width: 10px;
+                height: 10px;
+            }
+
+            body::-webkit-scrollbar-track,
+            .thumbnails-container::-webkit-scrollbar-track {
+                background: transparent;
+            }
+
+            body::-webkit-scrollbar-thumb,
+            .thumbnails-container::-webkit-scrollbar-thumb {
+                background: linear-gradient(45deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+                border-radius: 6px;
+                border: 2px solid transparent;
+                background-clip: padding-box;
+            }
+
+            body::-webkit-scrollbar-thumb:hover,
+            .thumbnails-container::-webkit-scrollbar-thumb:hover {
+                background: linear-gradient(45deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.2));
+            }
+
+            body::-webkit-scrollbar-corner,
+            .thumbnails-container::-webkit-scrollbar-corner {
+                background: transparent;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const NavLink = ({ href, children }) => (
+            <a href={href} className="hover:text-gray-300 transition duration-300">{children}</a>
+        );
+
+        function formatPrice(price, currency = 'COP') {
+            // Eliminar cualquier carácter que no sea número
+            const numericPrice = price.toString().replace(/\D/g, '');
+            
+            // Formatear el número manualmente
+            const parts = [];
+            let numberStr = numericPrice.toString();
+            
+            // Agregar grupos de tres dígitos desde el final
+            while (numberStr.length > 0) {
+                parts.unshift(numberStr.slice(-3));
+                numberStr = numberStr.slice(0, -3);
+            }
+            
+            // Unir con puntos
+            let formattedNumber = parts.join('.');
+            
+            // Si el número tiene 7 o más dígitos (es 1 millón o más)
+            if (numericPrice.length >= 7) {
+                const dots = formattedNumber.split('.');
+                // Si hay más de 3 partes (es decir, miles de millones o más)
+                if (dots.length > 3) {
+                    // Mantener el punto para miles de millones, usar comilla para millones
+                    formattedNumber = dots.slice(0, -2).join('.') + "'" + dots.slice(-2).join('.');
+                } else {
+                    // Solo millones, reemplazar el primer punto con comilla
+                    formattedNumber = formattedNumber.replace('.', "'");
+                }
+            }
+            
+            return (
+                <span className="whitespace-nowrap">
+                    $ {formattedNumber} <span className="text-sm text-gray-400 ml-1">{currency}</span>
+                </span>
+            );
+        }
+
+        function PropertyCard({ image, title, address, details, price, currency, id, beds, baths, area, lot }) {
+            return (
+                <div 
+                    className="relative group overflow-hidden transition-all duration-300 hover:shadow-2xl cursor-pointer"
+                    onClick={() => window.location.href = `property-detail.html?id=${id}`}
+                >
+                    <div className="absolute top-4 right-4 bg-white bg-opacity-90 text-black px-3 py-1 text-xs uppercase tracking-wider z-10">
+                        For Sale
+                    </div>
+                    <div className="bg-[#1a1a1a] border border-gray-800">
+                        <div className="relative overflow-hidden">
+                            <img 
+                                src={`http://192.168.20.23:3000${image}`} 
+                                alt={title} 
+                                className="w-full h-80 object-cover transition-transform duration-300 group-hover:scale-110"
+                            />
+                            <div className="absolute inset-0 bg-black bg-opacity-30 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        </div>
+                        <div className="p-6 md:p-8 text-center">
+                            <h2 className="font-playfair text-xl md:text-2xl mb-2 text-white">{title}</h2>
+                            <p className="text-gray-400 mb-4 text-xs md:text-sm tracking-wider">{address}</p>
+                            <div className="flex flex-wrap justify-center items-center gap-4 md:gap-8 mb-4">
+                                <div className="flex items-center">
+                                    <i className="fa-solid fa-bed text-gray-400 text-sm md:text-base mr-2"></i>
+                                    <span className="text-gray-400 text-sm md:text-base">{beds || '4'}</span>
+                                    <span className="text-gray-400 text-xs md:text-sm ml-1">Beds</span>
+                                </div>
+                                <div className="flex items-center">
+                                    <i className="fa-solid fa-bath text-gray-400 text-sm md:text-base mr-2"></i>
+                                    <span className="text-gray-400 text-sm md:text-base">{baths || '5'}</span>
+                                    <span className="text-gray-400 text-xs md:text-sm ml-1">Baths</span>
+                                </div>
+                                <div className="flex items-center">
+                                    <i className="fa-solid fa-ruler-combined text-gray-400 text-sm md:text-base mr-2"></i>
+                                    <span className="text-gray-400 text-sm md:text-base">{area || '250'}</span>
+                                    <span className="text-gray-400 text-xs md:text-sm ml-1">m²</span>
+                                </div>
+                                <div className="flex items-center">
+                                    <i className="fa-solid fa-chart-area text-gray-400 text-sm md:text-base mr-2"></i>
+                                    <span className="text-gray-400 text-sm md:text-base">{lot || '2000'}</span>
+                                    <span className="text-gray-400 text-xs md:text-sm ml-1">m² Lot</span>
+                                </div>
+                            </div>
+                            <p className="text-xl md:text-2xl font-light text-white">
+                                {formatPrice(price, currency)}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function App() {
+            const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+            const [properties, setProperties] = React.useState([]);
+
+            React.useEffect(() => {
+                fetch('http://192.168.20.23:3000/api/properties/location/cerritos-pereira')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data && data.length > 0) {
+                            setProperties(data);
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+            }, []);
+
+            return (
+                <div className="relative min-h-screen bg-[#0a0a0a]">
+                    {/* Header with Logo */}
+                    <div className="absolute w-full z-50 px-4 md:px-20 py-6">
+                        <div className="flex justify-between items-center">
+                            <div className="w-16 sm:w-24 cursor-pointer" onClick={() => window.location.href = 'pagina principal.html'}>
+                                <img src="./assets/images/logo.png" alt="JC International logo" className="w-full"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Menú hamburguesa con efecto circular y glow */}
+                    <div className="fixed top-0 right-0 z-[100] p-4 md:p-6">
+                        <button 
+                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                            className="w-12 h-12 flex flex-col justify-center items-center group relative bg-black bg-opacity-20 rounded-full backdrop-blur-sm hover:backdrop-blur-md transition-all duration-500 hover:shadow-[0_0_15px_rgba(255,255,255,0.3)]"
+                        >
+                            <span className={`w-5 h-0.5 bg-white rounded-full transform transition-all duration-500 ease-in-out
+                                ${isMenuOpen ? 'rotate-45 translate-y-1.5' : 'translate-y-[-4px] group-hover:translate-x-1'}`}></span>
+                            <span className={`w-5 h-0.5 bg-white rounded-full transform transition-all duration-300 ease-in-out
+                                ${isMenuOpen ? 'opacity-0 translate-x-3' : 'group-hover:translate-x-[-1px]'}`}></span>
+                            <span className={`w-5 h-0.5 bg-white rounded-full transform transition-all duration-500 ease-in-out
+                                ${isMenuOpen ? '-rotate-45 translate-y-[-7px]' : 'translate-y-[4px] group-hover:translate-x-[-2px]'}`}></span>
+                        </button>
+                    </div>
+
+                    {/* Fullscreen Menu */}
+                    <div 
+                        className={`fixed inset-0 bg-black bg-opacity-95 z-[90] transition-all duration-300 ${
+                            isMenuOpen 
+                            ? 'opacity-100 pointer-events-auto' 
+                            : 'opacity-0 pointer-events-none'
+                        }`}
+                    >
+                        <div className="flex items-center justify-center h-full">
+                            <div className="flex flex-col items-center space-y-8">
+                                <a 
+                                    href="pagina principal.html" 
+                                    className="text-white text-2xl hover:text-gray-300 transition-colors duration-300"
+                                    onClick={() => setIsMenuOpen(false)}
+                                >
+                                    HOME
+                                </a>
+                                <a 
+                                    href="nuestras propiedades.html" 
+                                    className="text-white text-2xl hover:text-gray-300 transition-colors duration-300"
+                                    onClick={() => setIsMenuOpen(false)}
+                                >
+                                    OUR PROPERTIES
+                                </a>
+                                <a 
+                                    href="pagina principal.html#smart-search" 
+                                    className="text-white text-2xl hover:text-gray-300 transition-colors duration-300"
+                                    onClick={() => setIsMenuOpen(false)}
+                                >
+                                    SMART SEARCH
+                                </a>
+                                <a 
+                                    href="pagina principal.html#regions" 
+                                    className="text-white text-2xl hover:text-gray-300 transition-colors duration-300"
+                                    onClick={() => setIsMenuOpen(false)}
+                                >
+                                    SEARCH BY REGIONS
+                                </a>
+                                <a 
+                                    href="pagina principal.html#about" 
+                                    className="text-white text-2xl hover:text-gray-300 transition-colors duration-300"
+                                    onClick={() => setIsMenuOpen(false)}
+                                >
+                                    ABOUT
+                                </a>
+                                <a 
+                                    href="pagina principal.html#blog" 
+                                    className="text-white text-2xl hover:text-gray-300 transition-colors duration-300"
+                                    onClick={() => setIsMenuOpen(false)}
+                                >
+                                    BLOG
+                                </a>
+                                <a 
+                                    href="pagina principal.html#work-with-us" 
+                                    className="text-white text-2xl hover:text-gray-300 transition-colors duration-300"
+                                    onClick={() => setIsMenuOpen(false)}
+                                >
+                                    WORK WITH US
+                                </a>
+                                <a 
+                                    href="https://wa.me/1234567890" 
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-white text-2xl hover:text-gray-300 transition-colors duration-300"
+                                    onClick={() => setIsMenuOpen(false)}
+                                >
+                                    QUICK CONTACT
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Hero Section */}
+                    <div className="relative h-screen">
+                        <div className="absolute inset-0">
+                            <img 
+                                src="./assets/images/vascosuarezlaura_An_iPhone_photo_of_a_modern_luxury_house_with__52ffc6df-25ad-480e-a15a-5b7ae6fb7080.png"
+                                alt="Scenic view of Cerritos Pereira with modern architecture"
+                                className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-black opacity-50"></div>
+                        </div>
+                        <div className="absolute inset-0 flex flex-col justify-center px-6 sm:px-20">
+                            <p className="text-white text-sm tracking-widest mb-4">EXCEPTIONAL</p>
+                            <h1 className="text-white text-4xl sm:text-7xl font-light mb-6">CERRITOS PEREIRA</h1>
+                            <div className="text-white text-sm mb-8">
+                                <p>TOMER FRIDMAN | CA DRE# 01750717</p>
+                                <p>ISIDORA FRIDMAN | CA DRE# 01192964</p>
+                            </div>
+                            <button className="text-white border border-white px-6 sm:px-8 py-3 uppercase text-sm tracking-wider w-fit hover:bg-white hover:text-black transition duration-300" onClick={() => {
+                                document.getElementById('properties-section').scrollIntoView({ behavior: 'smooth' });
+                            }}>
+                                View Properties
+                            </button>
+                        </div>
+                    </div>
+                    
+                    {/* Content Section */}
+                    <div className="px-4 md:px-20 py-16">
+                        <div className="max-w-4xl mx-auto text-center">
+                            <p className="text-gray-300 leading-relaxed text-sm sm:text-base">
+                                Bienvenido a Cerritos Pereira, un exclusivo sector que combina la tranquilidad del campo con la cercanía a la ciudad. The Fridman Group presenta una colección única de propiedades en esta zona privilegiada, caracterizada por sus amplios espacios verdes y arquitectura moderna. Nuestra selección incluye desde lujosas casas campestres hasta modernas mansiones con amenidades de primer nivel, todas diseñadas para ofrecer un estilo de vida excepcional en uno de los sectores más codiciados de Pereira.
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Properties Grid Section */}
+                    <div id="properties-section" className="px-4 md:px-20 py-16 bg-[#0a0a0a]">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            {properties.map((property, index) => (
+                                <PropertyCard 
+                                    key={index}
+                                    image={property.image_url}
+                                    title={property.title}
+                                    address={property.address}
+                                    details={property.details}
+                                    price={property.price}
+                                    currency={property.currency}
+                                    id={property.id}
+                                    beds={property.beds}
+                                    baths={property.baths}
+                                    area={property.area}
+                                    lot={property.lot}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>

@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Property Detail - JC International</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB2FXLYxbxw0jEijdyyd9QBx8M2w2wjGK4"></script>
+    <script src="https://unpkg.com/react@18.0.0/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18.0.0/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #030303;
+            color: #e5e5e5;
+        }
+        @media (min-width: 1024px) {
+            .hide-on-desktop {
+                display: none !important;
+            }
+        }
+        /* Estilos unificados para scrollbars - Solo PC */
+        @media (min-width: 768px) {
+            /* Scrollbar vertical */
+            body::-webkit-scrollbar,
+            .thumbnails-container::-webkit-scrollbar {
+                width: 10px;
+                height: 10px;
+            }
+
+            body::-webkit-scrollbar-track,
+            .thumbnails-container::-webkit-scrollbar-track {
+                background: transparent;
+            }
+
+            body::-webkit-scrollbar-thumb,
+            .thumbnails-container::-webkit-scrollbar-thumb {
+                background: linear-gradient(45deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+                border-radius: 6px;
+                border: 2px solid transparent;
+                background-clip: padding-box;
+            }
+
+            body::-webkit-scrollbar-thumb:hover,
+            .thumbnails-container::-webkit-scrollbar-thumb:hover {
+                background: linear-gradient(45deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.2));
+            }
+
+            body::-webkit-scrollbar-corner,
+            .thumbnails-container::-webkit-scrollbar-corner {
+                background: transparent;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        function formatPrice(price, currency = 'COP') {
+            // Eliminar cualquier carácter que no sea número
+            const numericPrice = price.toString().replace(/\D/g, '');
+            
+            // Formatear el número manualmente
+            const parts = [];
+            let numberStr = numericPrice.toString();
+            
+            // Agregar grupos de tres dígitos desde el final
+            while (numberStr.length > 0) {
+                parts.unshift(numberStr.slice(-3));
+                numberStr = numberStr.slice(0, -3);
+            }
+            
+            // Unir con puntos
+            let formattedNumber = parts.join('.');
+            
+            // Si el número tiene 7 o más dígitos (es 1 millón o más)
+            if (numericPrice.length >= 7) {
+                const dots = formattedNumber.split('.');
+                // Si hay más de 3 partes (es decir, miles de millones o más)
+                if (dots.length > 3) {
+                    // Mantener el punto para miles de millones, usar comilla para millones
+                    formattedNumber = dots.slice(0, -2).join('.') + "'" + dots.slice(-2).join('.');
+                } else {
+                    // Solo millones, reemplazar el primer punto con comilla
+                    formattedNumber = formattedNumber.replace('.', "'");
+                }
+            }
+            
+            return (
+                <span className="whitespace-nowrap">
+                    $ {formattedNumber} <span className="text-sm text-gray-400 ml-1">{currency}</span>
+                </span>
+            );
+        }
+
+        function App() {
+            const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+            const [properties, setProperties] = React.useState([]);
+            const [currentImageIndex, setCurrentImageIndex] = React.useState(0);
+            const [isDragging, setIsDragging] = React.useState(false);
+            const [isGalleryOpen, setIsGalleryOpen] = React.useState(false);
+            const [previewImage, setPreviewImage] = React.useState(null);
+            const [activeTab, setActiveTab] = React.useState('photos');
+            const [startX, setStartX] = React.useState(0);
+            const [scrollLeft, setScrollLeft] = React.useState(0);
+            const thumbnailsRef = React.useRef(null);
+            const isMobile = window.innerWidth < 768; // Detectar si es móvil
+
+            // Estado para la imagen en pantalla completa
+            const [fullscreenImage, setFullscreenImage] = React.useState(null);
+
+            // Estado para el índice de la imagen actual
+            const [fullscreenCurrentIndex, setFullscreenCurrentIndex] = React.useState(0);
+
+            // Función para navegar entre imágenes
+            const navigateImage = (direction) => {
+                const currentIndex = property.images.findIndex(img => `http://192.168.20.23:3000${img}` === fullscreenImage);
+                let newIndex;
+                
+                if (direction === 'next') {
+                    newIndex = currentIndex === property.images.length - 1 ? 0 : currentIndex + 1;
+                } else {
+                    newIndex = currentIndex === 0 ? property.images.length - 1 : currentIndex - 1;
+                }
+                
+                setFullscreenImage(`http://192.168.20.23:3000${property.images[newIndex]}`);
+                setFullscreenCurrentIndex(newIndex);
+            };
+
+            // Manejador de teclas para navegación
+            React.useEffect(() => {
+                const handleKeyPress = (e) => {
+                    if (!fullscreenImage) return;
+                    
+                    if (e.key === 'ArrowRight') {
+                        navigateImage('next');
+                    } else if (e.key === 'ArrowLeft') {
+                        navigateImage('prev');
+                    } else if (e.key === 'Escape') {
+                        setFullscreenImage(null);
+                    }
+                };
+
+                window.addEventListener('keydown', handleKeyPress);
+                return () => window.removeEventListener('keydown', handleKeyPress);
+            }, [fullscreenImage]);
+
+            // Efecto para bloquear el scroll cuando la imagen está en pantalla completa
+            React.useEffect(() => {
+                if (fullscreenImage) {
+                    // Guardar el scroll actual
+                    const scrollY = window.scrollY;
+                    
+                    // Bloquear el scroll
+                    document.body.style.position = 'fixed';
+                    document.body.style.top = `-${scrollY}px`;
+                    document.body.style.width = '100%';
+                    document.body.style.overflowY = 'hidden';
+                    
+                    // Restaurar el scroll cuando se cierre
+                    return () => {
+                        document.body.style.position = '';
+                        document.body.style.top = '';
+                        document.body.style.width = '';
+                        document.body.style.overflowY = '';
+                        window.scrollTo(0, scrollY);
+                    };
+                }
+            }, [fullscreenImage]);
+
+            // Efecto para manejar el scroll en el modal de galería
+            React.useEffect(() => {
+                if (isGalleryOpen) {
+                    // Guardar el scroll actual
+                    const scrollY = window.scrollY;
+                    
+                    // Bloquear el scroll de la página
+                    document.body.style.position = 'fixed';
+                    document.body.style.top = `-${scrollY}px`;
+                    document.body.style.width = '100%';
+                    document.body.style.overflowY = 'hidden';
+                    
+                    // Restaurar el scroll cuando se cierre
+                    return () => {
+                        document.body.style.position = '';
+                        document.body.style.top = '';
+                        document.body.style.width = '';
+                        document.body.style.overflowY = '';
+                        window.scrollTo(0, scrollY);
+                    };
+                }
+            }, [isGalleryOpen]);
+
+            // Funciones para el drag scroll
+            const handleMouseDown = (e) => {
+                if (isMobile) return; // No activar en móvil
+                setIsDragging(true);
+                setStartX(e.pageX - thumbnailsRef.current.offsetLeft);
+                setScrollLeft(thumbnailsRef.current.scrollLeft);
+                thumbnailsRef.current.style.cursor = 'grabbing';
+                thumbnailsRef.current.style.userSelect = 'none';
+            };
+
+            const handleMouseLeave = () => {
+                if (isMobile) return;
+                setIsDragging(false);
+                thumbnailsRef.current.style.cursor = 'grab';
+                thumbnailsRef.current.style.userSelect = 'auto';
+            };
+
+            const handleMouseUp = () => {
+                if (isMobile) return;
+                setIsDragging(false);
+                thumbnailsRef.current.style.cursor = 'grab';
+                thumbnailsRef.current.style.userSelect = 'auto';
+            };
+
+            const handleMouseMove = (e) => {
+                if (!isDragging || isMobile) return;
+                e.preventDefault();
+                const x = e.pageX - thumbnailsRef.current.offsetLeft;
+                const walk = (x - startX) * 2; // Velocidad del scroll
+                thumbnailsRef.current.scrollLeft = scrollLeft - walk;
+            };
+
+            const [property, setProperty] = React.useState(null);
+            const [loading, setLoading] = React.useState(true);
+            const [showAllPhotos, setShowAllPhotos] = React.useState(false);
+            const [additionalImages, setAdditionalImages] = React.useState([]);
+
+            // Obtener el ID de la propiedad de la URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const propertyId = urlParams.get('id');
+
+            React.useEffect(() => {
+                if (propertyId) {
+                    fetch(`http://192.168.20.23:3000/api/properties/${propertyId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log('Datos de la propiedad recibidos:', data);
+                            setProperty(data);
+                            setLoading(false);
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            setLoading(false);
+                        });
+
+                    fetch(`http://192.168.20.23:3000/api/properties/${propertyId}/images`)
+                        .then(response => response.json())
+                        .then(data => setAdditionalImages(data))
+                        .catch(error => console.error('Error:', error));
+                }
+            }, []);
+
+            // Efecto separado para inicializar el mapa cuando la propiedad cambie
+            React.useEffect(() => {
+                if (property) {
+                    console.log('Datos de la propiedad:', property);
+                    console.log('Coordenadas:', {
+                        latitude: property.latitude,
+                        longitude: property.longitude
+                    });
+                    
+                    // Esperar un momento para asegurar que el elemento del mapa existe
+                    setTimeout(() => {
+                        const lat = parseFloat(property.latitude) || 3.4516; // Coordenada por defecto de Cali si no hay lat
+                        const lng = parseFloat(property.longitude) || -76.5320; // Coordenada por defecto de Cali si no hay lng
+                        
+                        console.log('Inicializando mapa con coordenadas:', { lat, lng });
+                        
+                        const map = new google.maps.Map(document.getElementById('map'), {
+                            zoom: 15,
+                            center: { lat, lng },
+                            mapTypeControl: false,
+                            streetViewControl: false,
+                            fullscreenControl: false,
+                            zoomControl: true
+                        });
+
+                        new google.maps.Marker({
+                            position: { lat, lng },
+                            map: map,
+                            draggable: false
+                        });
+                    }, 500);
+                }
+            }, [property]);
+
+            React.useEffect(() => {
+                if (isGalleryOpen && activeTab === 'map' && property) {
+                    const modalMap = new google.maps.Map(document.getElementById('modalMap'), {
+                        center: { lat: property.latitude, lng: property.longitude },
+                        zoom: 16,
+                        styles: [
+                            {
+                                featureType: 'all',
+                                elementType: 'all',
+                                stylers: [{ saturation: -100 }]
+                            }
+                        ]
+                    });
+
+                    new google.maps.Marker({
+                        position: { lat: property.latitude, lng: property.longitude },
+                        map: modalMap,
+                        icon: {
+                            path: google.maps.SymbolPath.CIRCLE,
+                            scale: 10,
+                            fillColor: '#1a1a1a',
+                            fillOpacity: 1,
+                            strokeWeight: 2,
+                            strokeColor: '#ffffff',
+                        }
+                    });
+                }
+            }, [isGalleryOpen, activeTab, property]);
+
+            React.useEffect(() => {
+                if (isGalleryOpen && activeTab === 'street' && property) {
+                    const streetView = new google.maps.StreetViewPanorama(
+                        document.getElementById('modalStreetView'),
+                        {
+                            position: { lat: property.latitude, lng: property.longitude },
+                            pov: { heading: 0, pitch: 0 },
+                            zoom: 1,
+                            addressControl: false,
+                            showRoadLabels: false,
+                            motionTracking: false,
+                            motionTrackingControl: false
+                        }
+                    );
+                }
+            }, [isGalleryOpen, activeTab, property]);
+
+            const nextImage = () => {
+                if (property && property.images) {
+                    setCurrentImageIndex((prevIndex) => 
+                        prevIndex + 1 >= property.images.length ? 0 : prevIndex + 1
+                    );
+                }
+            };
+
+            const previousImage = () => {
+                if (property && property.images) {
+                    setCurrentImageIndex((prevIndex) => 
+                        prevIndex - 1 < 0 ? property.images.length - 1 : prevIndex - 1
+                    );
+                }
+            };
+
+            const handleVideoClick = () => {
+                const preview = document.getElementById('youtube-preview');
+                const iframe = document.createElement('iframe');
+                iframe.setAttribute('src', 'https://www.youtube.com/embed/z9RsIiiVH0o?autoplay=1&rel=0&showinfo=0&modestbranding=1');
+                iframe.setAttribute('frameborder', '0');
+                iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture');
+                iframe.setAttribute('allowfullscreen', '');
+                iframe.style.position = 'absolute';
+                iframe.style.top = '0';
+                iframe.style.left = '0';
+                iframe.style.width = '100%';
+                iframe.style.height = '100%';
+                
+                // Reemplazar todo el contenido del preview con el iframe
+                preview.innerHTML = '';
+                preview.appendChild(iframe);
+                preview.style.cursor = 'default';
+                preview.onclick = null;
+            };
+
+            if (loading) {
+                return (
+                    <div className="flex items-center justify-center h-screen">
+                        <p className="text-2xl text-white">Loading property details...</p>
+                    </div>
+                );
+            }
+
+            if (!property) {
+                return (
+                    <div className="flex items-center justify-center h-screen">
+                        <p className="text-2xl text-white">Property not found</p>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-[#030303] custom-scrollbar">
+                    {/* Header with Logo */}
+                    <div className="absolute w-full z-50 px-4 md:px-20 py-6">
+                        <div className="flex justify-between items-center">
+                            <div className="w-16 sm:w-24">
+                                <a href="pagina principal.html">
+                                    <img src="./assets/images/logo.png" alt="JC International logo" className="w-full"/>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Fixed Hamburger Button and Menu Container */}
+                    <div className="fixed top-0 right-0 z-[100] p-4 md:p-6">
+                        <button 
+                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                            className="w-12 h-12 flex flex-col justify-center items-center group relative bg-black bg-opacity-20 rounded-full backdrop-blur-sm hover:backdrop-blur-md transition-all duration-500 hover:shadow-[0_0_15px_rgba(255,255,255,0.3)]"
+                        >
+                            <span className={`w-5 h-0.5 bg-white rounded-full transform transition-all duration-500 ease-in-out
+                                ${isMenuOpen ? 'rotate-45 translate-y-1.5' : 'translate-y-[-4px] group-hover:translate-x-1'}`}></span>
+                            <span className={`w-5 h-0.5 bg-white rounded-full transform transition-all duration-300 ease-in-out
+                                ${isMenuOpen ? 'opacity-0 translate-x-3' : 'group-hover:translate-x-[-1px]'}`}></span>
+                            <span className={`w-5 h-0.5 bg-white rounded-full transform transition-all duration-500 ease-in-out
+                                ${isMenuOpen ? '-rotate-45 translate-y-[-7px]' : 'translate-y-[4px] group-hover:translate-x-[-2px]'}`}></span>
+                        </button>
+                    </div>
+
+                    {/* Fullscreen Menu */}
+                    <div 
+                        className={`fixed inset-0 bg-black bg-opacity-95 z-[90] transition-all duration-300 ${
+                            isMenuOpen 
+                            ? 'opacity-100 pointer-events-auto' 
+                            : 'opacity-0 pointer-events-none'
+                        }`}
+                    >
+                        <div className="flex flex-col items-center justify-center h-full space-y-8">
+                            <a 
+                                href="pagina principal.html" 
+                                className="text-white text-2xl hover:text-gray-300 transition-colors duration-300"
+                                onClick={() => setIsMenuOpen(false)}
+                            >
+                                HOME
+                            </a>
+                            <a 
+                                href="nuestras propiedades.html" 
+                                className="text-white text-2xl hover:text-gray-300 transition-colors duration-300"
+                                onClick={() => setIsMenuOpen(false)}
+                            >
+                                OUR PROPERTIES
+                            </a>
+                            <a 
+                                href="pagina principal.html#smart-search" 
+                                className="text-white text-2xl hover:text-gray-300 transition-colors duration-300"
+                                onClick={() => setIsMenuOpen(false)}
+                            >
+                                SMART SEARCH
+                            </a>
+                            <a 
+                                href="pagina principal.html#regions" 
+                                className="text-white text-2xl hover:text-gray-300 transition-colors duration-300"
+                                onClick={() => setIsMenuOpen(false)}
+                            >
+                                SEARCH BY REGIONS
+                            </a>
+                            <a 
+                                href="pagina principal.html#about" 
+                                className="text-white text-2xl hover:text-gray-300 transition-colors duration-300"
+                                onClick={() => setIsMenuOpen(false)}
+                            >
+                                ABOUT
+                            </a>
+                            <a 
+                                href="pagina principal.html#blog" 
+                                className="text-white text-2xl hover:text-gray-300 transition-colors duration-300"
+                                onClick={() => setIsMenuOpen(false)}
+                            >
+                                BLOG
+                            </a>
+                            <a 
+                                href="pagina principal.html#work-with-us" 
+                                className="text-white text-2xl hover:text-gray-300 transition-colors duration-300"
+                                onClick={() => setIsMenuOpen(false)}
+                            >
+                                WORK WITH US
+                            </a>
+                            <a 
+                                href="https://wa.me/1234567890" 
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-white text-2xl hover:text-gray-300 transition-colors duration-300"
+                                onClick={() => setIsMenuOpen(false)}
+                            >
+                                QUICK CONTACT
+                            </a>
+                        </div>
+                    </div>
+
+                    {/* Componente de imagen en pantalla completa */}
+                    {fullscreenImage && (
+                        <div 
+                            className="fixed inset-0 z-[10000] bg-black/95 flex items-center justify-center overflow-hidden"
+                            onClick={(e) => {
+                                if (e.target === e.currentTarget) {
+                                    setFullscreenImage(null);
+                                }
+                            }}
+                        >
+                            {/* Botón cerrar */}
+                            <button 
+                                className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors z-20"
+                                onClick={() => setFullscreenImage(null)}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+
+                            {/* Flecha izquierda */}
+                            <button 
+                                className="absolute left-4 top-1/2 -translate-y-1/2 group"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigateImage('prev');
+                                }}
+                            >
+                                <div className="bg-white/10 group-hover:bg-white/20 backdrop-blur-md rounded-full p-3 transition-all duration-300 group-hover:scale-110">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                    </svg>
+                                </div>
+                            </button>
+
+                            {/* Flecha derecha */}
+                            <button 
+                                className="absolute right-4 top-1/2 -translate-y-1/2 group"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigateImage('next');
+                                }}
+                            >
+                                <div className="bg-white/10 group-hover:bg-white/20 backdrop-blur-md rounded-full p-3 transition-all duration-300 group-hover:scale-110">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </div>
+                            </button>
+
+                            {/* Contador de imágenes */}
+                            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 backdrop-blur-md px-4 py-2 rounded-full">
+                                <span className="text-white text-sm">
+                                    {fullscreenCurrentIndex + 1} / {property.images.length}
+                                </span>
+                            </div>
+
+                            {/* Imagen */}
+                            <img 
+                                src={fullscreenImage} 
+                                alt="Fullscreen view" 
+                                className="max-h-[90vh] max-w-[90vw] object-contain"
+                            />
+                        </div>
+                    )}
+
+                    {/* Main Content */}
+                    <div className="relative w-full">
+                        {/* Logo */}
+                        <div className="absolute w-full z-50 px-4 md:px-20 py-6">
+                            <div className="w-16 sm:w-24">
+                                <a href="pagina principal.html">
+                                    <img src="./assets/images/logo.png" alt="JC International logo" className="w-full"/>
+                                </a>
+                            </div>
+                        </div>
+
+                        {/* Main Image Section */}
+                        <div className="relative w-full h-[70vh] md:h-[80vh] mb-2 group overflow-hidden rounded-lg">
+                            <img 
+                                src={`http://192.168.20.23:3000${property.images[currentImageIndex]}`} 
+                                alt={property.title} 
+                                className="w-full h-full object-cover transition-all duration-700 group-hover:scale-105 group-hover:brightness-110"
+                            />
+                            {/* Gradientes sutiles */}
+                            <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                            <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                            
+                            {/* Navigation Arrows - Visibles en móvil, más sofisticados en PC */}
+                            <button 
+                                onClick={previousImage}
+                                className="absolute left-6 top-1/2 transform -translate-y-1/2 w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full bg-black/10 backdrop-blur-md transition-all duration-500 md:opacity-0 md:group-hover:opacity-100 hover:bg-black/30 hover:scale-110 md:hover:shadow-[0_0_20px_rgba(255,255,255,0.4)] md:-translate-x-4 md:group-hover:translate-x-0"
+                            >
+                                <i className="fas fa-chevron-left text-white text-xl transition-transform duration-300 group-hover:scale-110"></i>
+                            </button>
+                            <button 
+                                onClick={nextImage}
+                                className="absolute right-6 top-1/2 transform -translate-y-1/2 w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full bg-black/10 backdrop-blur-md transition-all duration-500 md:opacity-0 md:group-hover:opacity-100 hover:bg-black/30 hover:scale-110 md:hover:shadow-[0_0_20px_rgba(255,255,255,0.4)] md:translate-x-4 md:group-hover:translate-x-0"
+                            >
+                                <i className="fas fa-chevron-right text-white text-xl transition-transform duration-300 group-hover:scale-110"></i>
+                            </button>
+
+                            {/* Contador de imágenes - Visible en móvil, más sofisticado en PC */}
+                            <div className="absolute bottom-4 right-4 px-4 py-2 bg-black/20 backdrop-blur-md rounded-full md:opacity-0 md:group-hover:opacity-100 transition-all duration-500 md:translate-y-4 md:group-hover:translate-y-0">
+                                <span className="text-white text-sm font-light tracking-wider">
+                                    {currentImageIndex + 1} / {property.images.length}
+                                </span>
+                            </div>
+
+                            {/* Overlay de brillo - Solo PC */}
+                            <div className="absolute inset-0 hidden md:block bg-gradient-to-tr from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
+
+                            {/* See All Photos Button */}
+                            <button 
+                                onClick={() => setIsGalleryOpen(true)}
+                                className="absolute bottom-6 right-6 group flex items-center space-x-3 bg-black/30 hover:bg-black/50 backdrop-blur-md px-6 py-3 rounded-full transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                            >
+                                <div className="flex items-center space-x-4">
+                                    <div className="flex -space-x-2">
+                                        <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+                                            </svg>
+                                        </div>
+                                        <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                                            </svg>
+                                        </div>
+                                        <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                                <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col text-white">
+                                        <span className="text-sm font-semibold tracking-wide">Explore Property</span>
+                                        <span className="text-xs text-white/70">Photos · Street View · Location</span>
+                                    </div>
+                                </div>
+                                <div className="w-6 h-6 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:bg-white/30 transition-all duration-300">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                            </button>
+                        </div>
+
+                        {/* Thumbnails Section */}
+                        <div className="relative">
+                            {/* Contenedor de miniaturas con scroll personalizado para PC */}
+                            <div 
+                                ref={thumbnailsRef}
+                                onMouseDown={handleMouseDown}
+                                onMouseLeave={handleMouseLeave}
+                                onMouseUp={handleMouseUp}
+                                onMouseMove={handleMouseMove}
+                                className={`flex gap-2 md:gap-3 overflow-x-auto pb-2 md:pb-3 
+                                    thumbnails-container
+                                    md:cursor-grab
+                                    ${isDragging ? 'md:cursor-grabbing' : ''}
+                                    select-none`}
+                            >
+                                {property.images.map((image, index) => (
+                                    <div 
+                                        key={index} 
+                                        className={`relative flex-none w-48 md:w-56 aspect-[4/3] group cursor-pointer
+                                            transition-transform duration-300 ease-out
+                                            ${isDragging ? 'scale-[0.98]' : 'scale-100'}`}
+                                        onClick={() => !isDragging && setCurrentImageIndex(index)}
+                                    >
+                                        <img 
+                                            src={`http://192.168.20.23:3000${image}`} 
+                                            alt={`Property view ${index + 1}`} 
+                                            className={`w-full h-full object-cover rounded-lg transition-all duration-500 md:duration-700 
+                                                group-hover:brightness-110 group-hover:scale-[1.03] 
+                                                md:group-hover:scale-[1.05]
+                                                ${isDragging ? 'brightness-90' : ''}
+                                                ${currentImageIndex === index ? 'ring-2 ring-white/50 md:ring-white' : ''}`}
+                                            draggable="false"
+                                        />
+                                        <div className={`absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-all duration-300 rounded-lg 
+                                            ${currentImageIndex === index ? 'bg-black/0' : ''}
+                                            ${isDragging ? 'bg-black/20' : ''}`}>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            
+                            {/* Scroll Arrows - Solo visibles en PC */}
+                            <button 
+                                className="hidden md:flex absolute left-0 top-1/2 transform -translate-y-1/2 w-10 h-10 items-center justify-center rounded-full bg-black/40 backdrop-blur-md hover:bg-black/60 transition-all duration-300 hover:scale-110 hover:shadow-[0_0_15px_rgba(255,255,255,0.3)]"
+                                onClick={() => document.querySelector('.overflow-x-auto').scrollBy({ left: -300, behavior: 'smooth' })}
+                            >
+                                <i className="fas fa-chevron-left text-white text-sm"></i>
+                            </button>
+                            <button 
+                                className="hidden md:flex absolute right-0 top-1/2 transform -translate-y-1/2 w-10 h-10 items-center justify-center rounded-full bg-black/40 backdrop-blur-md hover:bg-black/60 transition-all duration-300 hover:scale-110 hover:shadow-[0_0_15px_rgba(255,255,255,0.3)]"
+                                onClick={() => document.querySelector('.overflow-x-auto').scrollBy({ left: 300, behavior: 'smooth' })}
+                            >
+                                <i className="fas fa-chevron-right text-white text-sm"></i>
+                            </button>
+                        </div>
+
+                        {/* Property Details Section */}
+                        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+                            <div className="mt-4">
+                                <div className="inline-block bg-black text-white px-2 py-1 text-xs font-semibold">
+                                    FOR SALE
+                                </div>
+                                <h1 className="text-4xl mt-2 text-white">{property.title}</h1>
+                                <p className="text-xl text-gray-400 mt-2">{property.address}</p>
+                                <p className="text-3xl text-white mt-4 font-semibold">
+                                    {formatPrice(property.price, property.currency)}
+                                </p>
+                                <p className="text-xs text-gray-400 mt-1">ID: {property.mls_id}</p>
+
+                                <div className="relative py-2 mt-2">
+                                    <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+                                </div>
+
+                            </div>
+
+                            <div className="mt-8 flex flex-col lg:flex-row">
+                                <div className="lg:w-3/4 lg:pr-8">
+                                    <div className="mb-12">
+                                        <h2 className="text-2xl text-white mb-4">Description</h2>
+                                        <p className="text-gray-400 leading-relaxed">
+                                            {property.details}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="lg:w-1/4 mt-8 lg:mt-0">
+                                    <div className="space-y-6">
+                                        <div className="flex items-center">
+                                            <i className="fas fa-bed text-2xl w-8 text-gray-400"></i>
+                                            <div className="ml-4">
+                                                <div className="text-2xl sm:text-3xl font-semibold text-white">{property.beds || '3'}</div>
+                                                <div className="text-xs sm:text-sm font-medium text-gray-400">BEDS</div>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center">
+                                            <i className="fas fa-bath text-2xl w-8 text-gray-400"></i>
+                                            <div className="ml-4">
+                                                <div className="text-2xl sm:text-3xl font-semibold text-white">{property.baths || '4'}</div>
+                                                <div className="text-xs sm:text-sm font-medium text-gray-400">BATHS</div>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center">
+                                            <i className="fas fa-vector-square text-2xl w-8 text-gray-400"></i>
+                                            <div className="ml-4">
+                                                <div className="text-2xl sm:text-3xl font-semibold text-white">{property.living_area} m²</div>
+                                                <div className="text-xs sm:text-sm font-medium text-gray-400">LIVING AREA</div>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center">
+                                            <i className="fas fa-expand-arrows-alt text-2xl w-8 text-gray-400"></i>
+                                            <div className="ml-4">
+                                                <div className="text-2xl sm:text-3xl font-semibold text-white">{property.lot_size} m²</div>
+                                                <div className="text-xs sm:text-sm font-medium text-gray-400">LOT SIZE</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* YouTube Video Section */}
+                        <div className="container mx-auto px-4 py-8 md:py-12 max-w-6xl">
+                            <h1 className="text-4xl text-center mb-8 text-white">Property Video</h1>
+                            <div className="w-full flex justify-center">
+                                <div className="relative w-full aspect-video rounded-2xl overflow-hidden group cursor-pointer" id="youtube-preview" onClick={handleVideoClick}>
+                                    {/* Vista previa HD */}
+                                    <img 
+                                        src="https://i.ytimg.com/vi/z9RsIiiVH0o/maxresdefault.jpg" 
+                                        alt="Video Preview" 
+                                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                    />
+                                    {/* Overlay oscuro con transición */}
+                                    <div className="absolute inset-0 bg-black/30 transition-opacity duration-300 group-hover:opacity-0"></div>
+                                    {/* Botón de reproducción personalizado */}
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <div className="w-20 h-20 rounded-full bg-red-600 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:bg-red-700">
+                                            <svg className="w-10 h-10 text-white transform translate-x-0.5" viewBox="0 0 24 24" fill="currentColor">
+                                                <path d="M8 5v14l11-7z"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 3D Virtual Tour Section */}
+                        <div className="container mx-auto px-4 py-8 md:py-12 max-w-6xl">
+                            <h1 className="text-4xl text-center mb-8 text-white">Virtual Tour</h1>
+                            <div className="w-full flex justify-center">
+                                <div className="relative w-full aspect-video rounded-2xl overflow-hidden">
+                                    <a 
+                                        href="https://my.matterport.com/show/?m=Qgb8zxMLL6N"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="block w-full h-full"
+                                    >
+                                        <iframe 
+                                            className="absolute top-0 left-0 w-full h-full"
+                                            src="https://my.matterport.com/show/?m=Qgb8zxMLL6N" 
+                                            frameBorder="0" 
+                                            allowFullScreen 
+                                            allow="autoplay; fullscreen; web-share; xr-spatial-tracking;"
+                                        ></iframe>
+                                        {/* Overlay para mejorar la experiencia de clic */}
+                                        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 hover:opacity-100 transition-opacity duration-300">
+                                            <span className="text-white text-lg font-semibold">
+                                                Open Virtual Tour
+                                            </span>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Exterior 3D Section */}
+                        <div className="container mx-auto px-4 py-8 md:py-12 max-w-6xl">
+                            <h2 className="text-3xl text-center mb-8 text-white">Exterior 3D View</h2>
+                            <div className="w-full flex justify-center">
+                                <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden">
+                                    <a 
+                                        href="https://lumalabs.ai/embed/dc64164a-da2a-4a78-8923-3884a5b49ae5?mode=sparkles&background=%23ffffff&color=%23000000&showTitle=false&loadBg=true&logoPosition=top-left&infoPosition=bottom-right&cinematicVideo=undefined&showMenu=false"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="block w-full h-full"
+                                    >
+                                        <iframe 
+                                            className="absolute top-0 left-0 w-full h-full"
+                                            src="https://lumalabs.ai/embed/dc64164a-da2a-4a78-8923-3884a5b49ae5?mode=sparkles&background=%23ffffff&color=%23000000&showTitle=false&loadBg=true&logoPosition=top-left&infoPosition=bottom-right&cinematicVideo=undefined&showMenu=false" 
+                                            frameBorder="0" 
+                                            title="luma embed"
+                                            style={{ border: 'none' }}
+                                        ></iframe>
+                                        {/* Overlay para mejorar la experiencia de clic */}
+                                        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 hover:opacity-100 transition-opacity duration-300">
+                                            <span className="text-white text-lg font-semibold">
+                                                Open Exterior 3D
+                                            </span>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Features & Amenities Section */}
+                        <div className="container mx-auto px-4 py-16 max-w-6xl">
+                            <h1 className="text-4xl text-center mb-16 text-white">Features & Amenities</h1>
+                            
+                            <div className="relative w-full h-full">
+                                <div className="absolute inset-0 hide-on-desktop">
+                                    <video 
+                                        className="w-full h-full object-cover"
+                                        style={{ aspectRatio: '9/16' }}
+                                        autoPlay
+                                        loop
+                                        muted
+                                        playsInline
+                                    >
+                                        <source src="./assets/videos/hero.mp4" type="video/mp4" />
+                                        Tu navegador no soporta el elemento de video.
+                                    </video>
+                                    <div 
+                                        className="absolute top-0 left-0 right-0 h-1/4" 
+                                        style={{
+                                            background: `linear-gradient(to bottom, #030303 0%, rgba(3, 3, 3, 0) 100%)`
+                                        }}
+                                    ></div>
+                                    <div 
+                                        className="absolute inset-0" 
+                                        style={{
+                                            backgroundColor: 'rgba(0,0,0,0.6)',
+                                            mixBlendMode: 'multiply'
+                                        }}
+                                    ></div>
+                                </div>
+                                <div className="relative z-10">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
+                                        {/* Interior Section */}
+                                        <div>
+                                            <h2 className="text-2xl mb-8 text-white">Interior</h2>
+                                            <div className="space-y-4">
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-400">TOTAL BEDROOMS</span>
+                                                    <span className="text-white">{property.beds || '3'}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-400">TOTAL BATHROOMS</span>
+                                                    <span className="text-white">{property.baths || '4'}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-400">LIVING AREA</span>
+                                                    <span className="text-white">{property.living_area} m²</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-400">LOT SIZE</span>
+                                                    <span className="text-white">{property.lot_size} m²</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Exterior and Financial Section */}
+                                        <div>
+                                            <h2 className="text-2xl mb-8 text-white">Exterior</h2>
+                                            <div className="space-y-4">
+                                                {property.pool !== 'No' && (
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-400">POOL</span>
+                                                        <span className="text-white">{property.pool}</span>
+                                                    </div>
+                                                )}
+                                                {property.jacuzzi !== 'No' && (
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-400">JACUZZI</span>
+                                                        <span className="text-white">{property.jacuzzi}</span>
+                                                    </div>
+                                                )}
+                                                {property.turco !== 'No' && (
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-400">TURKISH BATH</span>
+                                                        <span className="text-white">{property.turco}</span>
+                                                    </div>
+                                                )}
+                                                {property.sauna !== 'No' && (
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-400">SAUNA</span>
+                                                        <span className="text-white">{property.sauna}</span>
+                                                    </div>
+                                                )}
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-400">PARKING</span>
+                                                    <span className="text-white">{property.parking}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-400">HEAT TYPE</span>
+                                                    <span className="text-white">{property.heat_type}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-400">AIR CONDITIONING</span>
+                                                    <span className="text-white">{property.air_conditioning}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-400">ZONING</span>
+                                                    <span className="text-white">{property.zoning}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-400">VIEW</span>
+                                                    <span className="text-white">{property.view_description}</span>
+                                                </div>
+                                                <h2 className="text-2xl pt-12 mb-8 text-white">Area & Lot</h2>
+                                                <div className="space-y-4">
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-400">STATUS</span>
+                                                        <span className="text-white">{property.status}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-400">LIVING AREA</span>
+                                                        <span className="text-white">{property.living_area} m²</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-400">LOT SIZE</span>
+                                                        <span className="text-white">{property.lot_size} m²</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-400">TYPE</span>
+                                                        <span className="text-white">{property.property_type}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-400">YEAR BUILT</span>
+                                                        <span className="text-white">{property.year_built}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-400">ARCHITECTURE STYLES</span>
+                                                        <span className="text-white">{property.architecture_style}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Sección del Mapa */}
+                        <div className="mb-16 px-4 md:px-0">
+                            <h2 className="text-2xl font-light mb-8 text-center text-white">Ubicación</h2>
+                            <div id="map" style={{ height: '400px', width: '100%' }} className="rounded-lg overflow-hidden shadow-lg"></div>
+                        </div>
+
+                        {/* Gallery Modal */}
+                        {isGalleryOpen && (
+                            <div 
+                                className="fixed inset-0 bg-black bg-opacity-90 z-[9999] flex flex-col"
+                                data-property={JSON.stringify(property)}
+                            >
+                                {/* Modal Header with Tabs */}
+                                <div className="flex items-center justify-between px-4 py-2 bg-black/50 backdrop-blur-sm">
+                                    <div className="flex space-x-4">
+                                        <button 
+                                            onClick={() => setActiveTab('photos')}
+                                            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${activeTab === 'photos' ? 'bg-white text-black' : 'text-white hover:bg-white/10'}`}
+                                        >
+                                            Photos
+                                        </button>
+                                        <button 
+                                            onClick={() => setActiveTab('map')}
+                                            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${activeTab === 'map' ? 'bg-white text-black' : 'text-white hover:bg-white/10'}`}
+                                        >
+                                            Map
+                                        </button>
+                                        <button 
+                                            onClick={() => setActiveTab('street')}
+                                            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${activeTab === 'street' ? 'bg-white text-black' : 'text-white hover:bg-white/10'}`}
+                                        >
+                                            Street View
+                                        </button>
+                                    </div>
+                                    <button
+                                        onClick={() => setIsGalleryOpen(false)}
+                                        className="text-white/70 hover:text-white transition-colors"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+
+                                {/* Modal Content */}
+                                <div className="flex-1 relative overflow-y-auto">
+                                    {activeTab === 'photos' && (
+                                        <div className="h-full overflow-y-auto">
+                                            <div className="container mx-auto max-w-5xl px-4 py-6">
+                                                {property.images.reduce((acc, image, index) => {
+                                                    if (index % 3 === 0) {
+                                                        acc.push(
+                                                            <div key={`group-${index}`} className="mb-6">
+                                                                {/* Imagen grande */}
+                                                                <div 
+                                                                    className="w-full h-[300px] mb-6 overflow-hidden rounded-lg cursor-pointer group"
+                                                                    onClick={() => setFullscreenImage(`http://192.168.20.23:3000${image}`)}
+                                                                >
+                                                                    <img 
+                                                                        src={`http://192.168.20.23:3000${image}`}
+                                                                        alt={`Imagen ${index + 1}`}
+                                                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                                    />
+                                                                </div>
+                                                                
+                                                                {/* Contenedor para las dos imágenes siguientes */}
+                                                                {index + 1 < property.images.length && (
+                                                                    <div className="grid grid-cols-2 gap-6">
+                                                                        {property.images[index + 1] && (
+                                                                            <div 
+                                                                                className="h-[180px] overflow-hidden rounded-lg cursor-pointer group"
+                                                                                onClick={() => setFullscreenImage(`http://192.168.20.23:3000${property.images[index + 1]}`)}
+                                                                            >
+                                                                                <img 
+                                                                                    src={`http://192.168.20.23:3000${property.images[index + 1]}`}
+                                                                                    alt={`Imagen ${index + 2}`}
+                                                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                                                />
+                                                                            </div>
+                                                                        )}
+                                                                        {property.images[index + 2] && (
+                                                                            <div 
+                                                                                className="h-[180px] overflow-hidden rounded-lg cursor-pointer group"
+                                                                                onClick={() => setFullscreenImage(`http://192.168.20.23:3000${property.images[index + 2]}`)}
+                                                                            >
+                                                                                <img 
+                                                                                    src={`http://192.168.20.23:3000${property.images[index + 2]}`}
+                                                                                    alt={`Imagen ${index + 3}`}
+                                                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                                                />
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    }
+                                                    return acc;
+                                                }, [])}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {activeTab === 'map' && (
+                                        <div className="h-[calc(100vh-48px)] w-full">
+                                            <div 
+                                                id="modalMap" 
+                                                className="w-full h-full"
+                                                data-lat={property.latitude}
+                                                data-lng={property.longitude}
+                                            ></div>
+                                        </div>
+                                    )}
+
+                                    {activeTab === 'street' && (
+                                        <div className="h-[calc(100vh-48px)] w-full relative">
+                                            <div 
+                                                id="modalStreetView"
+                                                className="w-full h-full"
+                                            ></div>
+                                            {/* Controles personalizados */}
+                                            <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center space-x-4 bg-black/30 backdrop-blur-md px-6 py-3 rounded-full transition-all duration-300 hover:bg-black/50">
+                                                <button 
+                                                    onClick={() => streetViewPanorama?.setPov({ heading: streetViewPanorama.getPov().heading - 45, pitch: 0 })}
+                                                    className="text-white hover:text-gray-300 transition-transform duration-300 hover:scale-110"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                                                    </svg>
+                                                </button>
+                                                <button 
+                                                    onClick={() => streetViewPanorama?.setPov({ heading: streetViewPanorama.getPov().heading, pitch: streetViewPanorama.getPov().pitch + 10 })}
+                                                    className="text-white hover:text-gray-300 transition-transform duration-300 hover:scale-110"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                                    </svg>
+                                                </button>
+                                                <button 
+                                                    onClick={() => streetViewPanorama?.setPov({ heading: streetViewPanorama.getPov().heading, pitch: streetViewPanorama.getPov().pitch - 10 })}
+                                                    className="text-white hover:text-gray-300 transition-transform duration-300 hover:scale-110"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                    </svg>
+                                                </button>
+                                                <button 
+                                                    onClick={() => streetViewPanorama?.setPov({ heading: streetViewPanorama.getPov().heading + 45, pitch: 0 })}
+                                                    className="text-white hover:text-gray-300 transition-transform duration-300 hover:scale-110"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                            {/* Brújula */}
+                                            <div className="absolute top-8 right-8 bg-black/30 backdrop-blur-md p-4 rounded-full transition-all duration-300 hover:bg-black/50">
+                                                <div className="w-12 h-12 relative">
+                                                    <div className="absolute inset-0 border-2 border-white/30 rounded-full"></div>
+                                                    <div id="compass" className="absolute top-1/2 left-1/2 w-1 h-8 bg-white transform -translate-x-1/2 -translate-y-1/2 origin-center"></div>
+                                                </div>
+                                            </div>
+                                            {/* Indicador de zoom */}
+                                            <div className="absolute top-8 left-8 bg-black/30 backdrop-blur-md px-4 py-2 rounded-full">
+                                                <span className="text-white text-sm font-light tracking-wider" id="zoom-level">Zoom: 1x</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+
+    <script>
+        let modalMap;
+        let modalMarker;
+        let streetViewPanorama;
+
+        function initModalMap() {
+            if (typeof google === 'undefined') return;
+            
+            const mapElement = document.getElementById('modalMap');
+            if (!mapElement) return;
+
+            const lat = parseFloat(mapElement.dataset.lat) || 4.8087174;
+            const lng = parseFloat(mapElement.dataset.lng) || -75.7336535;
+            
+            modalMap = new google.maps.Map(mapElement, {
+                zoom: 15,
+                center: { lat, lng },
+                mapTypeControl: false,
+                streetViewControl: false,
+                fullscreenControl: false,
+                zoomControl: true
+            });
+
+            modalMarker = new google.maps.Marker({
+                position: { lat, lng },
+                map: modalMap,
+                icon: {
+                    url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                    scaledSize: new google.maps.Size(40, 40)
+                }
+            });
+        }
+
+        function initStreetView() {
+            if (typeof google === 'undefined') {
+                console.error('Google Maps no está cargado');
+                return;
+            }
+
+            const propertyElement = document.querySelector('[data-property]');
+            if (!propertyElement) {
+                console.error('No se encontraron datos de la propiedad');
+                return;
+            }
+
+            try {
+                const property = JSON.parse(propertyElement.dataset.property);
+                if (!property || !property.latitude || !property.longitude) {
+                    throw new Error('Coordenadas no disponibles');
+                }
+
+                const position = { 
+                    lat: parseFloat(property.latitude), 
+                    lng: parseFloat(property.longitude) 
+                };
+
+                console.log('Inicializando Street View en:', position);
+
+                const streetViewService = new google.maps.StreetViewService();
+                
+                streetViewService.getPanorama({ location: position, radius: 100 }, (data, status) => {
+                    if (status === google.maps.StreetViewStatus.OK) {
+                        console.log('Street View disponible, inicializando...');
+                        
+                        streetViewPanorama = new google.maps.StreetViewPanorama(
+                            document.getElementById('modalStreetView'),
+                            {
+                                position: position,
+                                pov: { heading: 0, pitch: 0 },
+                                zoom: 1,
+                                addressControl: true,
+                                showRoadLabels: true,
+                                motionTracking: true,
+                                motionTrackingControl: true,
+                                fullscreenControl: true,
+                                linksControl: false, // Desactivamos los controles predeterminados
+                                panControl: false,
+                                enableCloseButton: false,
+                                zoomControl: false,
+                                gestureHandling: 'greedy',
+                                scrollwheel: true
+                            }
+                        );
+
+                        if (modalMap) {
+                            modalMap.setStreetView(streetViewPanorama);
+                        }
+
+                        streetViewPanorama.addListener('pov_changed', () => {
+                            const pov = streetViewPanorama.getPov();
+                            const compass = document.getElementById('compass');
+                            if (compass) {
+                                compass.style.transform = `translate(-50%, -50%) rotate(${pov.heading}deg)`;
+                            }
+                        });
+
+                        streetViewPanorama.addListener('zoom_changed', () => {
+                            const zoom = streetViewPanorama.getZoom();
+                            const zoomLevel = document.getElementById('zoom-level');
+                            if (zoomLevel) {
+                                zoomLevel.textContent = `Zoom: ${zoom}x`;
+                            }
+                        });
+
+                        document.addEventListener('keydown', (e) => {
+                            if (!isGalleryOpen || activeTab !== 'street') return;
+                            
+                            const pov = streetViewPanorama.getPov();
+                            switch(e.key) {
+                                case 'ArrowLeft':
+                                    streetViewPanorama.setPov({
+                                        heading: pov.heading - 45,
+                                        pitch: pov.pitch
+                                    });
+                                    break;
+                                case 'ArrowRight':
+                                    streetViewPanorama.setPov({
+                                        heading: pov.heading + 45,
+                                        pitch: pov.pitch
+                                    });
+                                    break;
+                                case 'ArrowUp':
+                                    streetViewPanorama.setPov({
+                                        heading: pov.heading,
+                                        pitch: Math.min(pov.pitch + 10, 90)
+                                    });
+                                    break;
+                                case 'ArrowDown':
+                                    streetViewPanorama.setPov({
+                                        heading: pov.heading,
+                                        pitch: Math.max(pov.pitch - 10, -90)
+                                    });
+                                    break;
+                                case '+':
+                                    streetViewPanorama.setZoom(
+                                        Math.min(streetViewPanorama.getZoom() + 1, 4)
+                                    );
+                                    break;
+                                case '-':
+                                    streetViewPanorama.setZoom(
+                                        Math.max(streetViewPanorama.getZoom() - 1, 0)
+                                    );
+                                    break;
+                            }
+                        });
+
+                        // Variables para el control táctil
+                        let touchStartX = 0;
+                        let touchStartY = 0;
+                        let isDragging = false;
+                        const SENSITIVITY = 0.5; // Factor de sensibilidad aumentado
+
+                        // Manejadores de eventos táctiles
+                        const modalStreetView = document.getElementById('modalStreetView');
+                        
+                        modalStreetView.addEventListener('touchstart', (e) => {
+                            touchStartX = e.touches[0].clientX;
+                            touchStartY = e.touches[0].clientY;
+                            isDragging = true;
+                        }, { passive: true });
+
+                        modalStreetView.addEventListener('touchmove', (e) => {
+                            if (!isDragging) return;
+
+                            const touchX = e.touches[0].clientX;
+                            const touchY = e.touches[0].clientY;
+                            
+                            const deltaX = (touchX - touchStartX) * SENSITIVITY;
+                            const deltaY = (touchY - touchStartY) * SENSITIVITY;
+                            
+                            const pov = streetViewPanorama.getPov();
+                            
+                            // Aplicar cambios con interpolación suave
+                            streetViewPanorama.setPov({
+                                heading: pov.heading - deltaX * 0.5,
+                                pitch: Math.max(-90, Math.min(90, pov.pitch - deltaY * 0.5))
+                            });
+
+                            touchStartX = touchX;
+                            touchStartY = touchY;
+                        }, { passive: true });
+
+                        modalStreetView.addEventListener('touchend', () => {
+                            isDragging = false;
+                        }, { passive: true });
+
+                        // Gestos de pellizco para zoom
+                        let initialPinchDistance = 0;
+
+                        modalStreetView.addEventListener('touchstart', (e) => {
+                            if (e.touches.length === 2) {
+                                initialPinchDistance = Math.hypot(
+                                    e.touches[0].clientX - e.touches[1].clientX,
+                                    e.touches[0].clientY - e.touches[1].clientY
+                                );
+                            }
+                        }, { passive: true });
+
+                        modalStreetView.addEventListener('touchmove', (e) => {
+                            if (e.touches.length === 2) {
+                                const currentDistance = Math.hypot(
+                                    e.touches[0].clientX - e.touches[1].clientX,
+                                    e.touches[0].clientY - e.touches[1].clientY
+                                );
+                                
+                                if (initialPinchDistance > 0) {
+                                    const delta = currentDistance - initialPinchDistance;
+                                    const zoom = streetViewPanorama.getZoom();
+                                    
+                                    if (Math.abs(delta) > 10) {
+                                        streetViewPanorama.setZoom(
+                                            delta > 0 
+                                                ? Math.min(zoom + 0.5, 4)
+                                                : Math.max(zoom - 0.5, 0)
+                                        );
+                                        initialPinchDistance = currentDistance;
+                                    }
+                                }
+                            }
+                        }, { passive: true });
+
+                    } else {
+                        console.error('Street View no disponible:', status);
+                        const modalStreetView = document.getElementById('modalStreetView');
+                        modalStreetView.innerHTML = `
+                            <div class="flex items-center justify-center h-full bg-black/80">
+                                <p class="text-white text-lg">Street View no está disponible para esta ubicación</p>
+                            </div>
+                        `;
+                    }
+                });
+            } catch (error) {
+                console.error('Error al inicializar Street View:', error);
+                const modalStreetView = document.getElementById('modalStreetView');
+                modalStreetView.innerHTML = `
+                    <div class="flex items-center justify-center h-full bg-black/80">
+                        <p class="text-white text-lg">Error al cargar Street View</p>
+                    </div>
+                `;
+            }
+        }
+
+        document.addEventListener('click', function(e) {
+            if (e.target.textContent.includes('Map')) {
+                setTimeout(initModalMap, 100);
+            } else if (e.target.textContent.includes('Street')) {
+                setTimeout(initStreetView, 100);
+            }
+        });
+    </script>
+</body>
+</html>
