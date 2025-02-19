@@ -357,17 +357,37 @@
             }, []);
 
             React.useEffect(() => {
-                fetch('http://192.168.20.23:3000/api/latest-properties')
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data && data.length > 0) {
-                            console.log('Property data:', JSON.stringify(data[0], null, 2));
-                            console.log('Area value:', data[0].area);
-                            console.log('All property keys:', Object.keys(data[0]));
-                            setProperties(data);
-                        }
-                    })
-                    .catch(error => console.error('Error:', error));
+                // Datos de propiedades locales
+                const localProperties = [
+                    {
+                        title: "Luxury Villa in Cali",
+                        image_url: "./uploads/1739917029820-275378580.png",
+                        price: "2500000000",
+                        location: "Cali, Valle del Cauca",
+                        area: "500",
+                        bedrooms: "5",
+                        bathrooms: "4"
+                    },
+                    {
+                        title: "Modern Estate in Pereira",
+                        image_url: "./uploads/1739917029832-600103326.png",
+                        price: "1800000000",
+                        location: "Pereira, Risaralda",
+                        area: "450",
+                        bedrooms: "4",
+                        bathrooms: "3"
+                    },
+                    {
+                        title: "Luxury Country House",
+                        image_url: "./uploads/1739917029841-47510007.png",
+                        price: "3200000000",
+                        location: "Cerritos, Pereira",
+                        area: "600",
+                        bedrooms: "6",
+                        bathrooms: "5"
+                    }
+                ];
+                setProperties(localProperties);
             }, []);
 
             const nextProperty = () => {
@@ -600,7 +620,7 @@
                             {properties.length > 0 ? (
                                 <>
                                     <img 
-                                        src={`http://192.168.20.23:3000${properties[currentIndex].image_url}`}
+                                        src={properties[currentIndex].image_url}
                                         alt={properties[currentIndex].title}
                                         className="w-full h-full object-cover"
                                     />
@@ -635,14 +655,14 @@
                                         <div className="text-sm mb-1">FEATURED</div>
                                         <div className="text-3xl font-light mb-2">{formatPrice(properties[currentIndex].price, properties[currentIndex].currency)}</div>
                                         <div className="text-4xl font-light mb-2">{properties[currentIndex].title}</div>
-                                        <div className="text-sm mb-2">{properties[currentIndex].address}</div>
+                                        <div className="text-sm mb-2">{properties[currentIndex].location}</div>
                                         <div className="text-sm mb-2 flex justify-end gap-4">
-                                            <span><i className="fas fa-bed mr-2"></i>{properties[currentIndex].beds} Beds</span>
-                                            <span><i className="fas fa-bath mr-2"></i>{properties[currentIndex].baths} Baths</span>
+                                            <span><i className="fas fa-bed mr-2"></i>{properties[currentIndex].bedrooms} Beds</span>
+                                            <span><i className="fas fa-bath mr-2"></i>{properties[currentIndex].bathrooms} Baths</span>
                                         </div>
                                         <div className="text-sm mb-4 flex justify-end gap-4">
-                                            <span><i className="fas fa-home mr-2"></i>{properties[currentIndex].living_area} m²</span>
-                                            <span><i className="fas fa-ruler-combined mr-2"></i>{properties[currentIndex].lot_size} m² Lot</span>
+                                            <span><i className="fas fa-home mr-2"></i>{properties[currentIndex].area} m²</span>
+                                            <span><i className="fas fa-ruler-combined mr-2"></i>{properties[currentIndex].area} m² Lot</span>
                                         </div>
                                         <button 
                                             onClick={() => window.location.href = `property-detail.html?id=${properties[currentIndex].id}`}
